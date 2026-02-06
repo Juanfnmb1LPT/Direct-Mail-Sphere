@@ -6,11 +6,22 @@
       </button>
       <h2>User Dashboard</h2>
       <div class="dashboard-actions">
-        <button class="primary-button" type="button" @click="createMail">
-          Create Mail
+        <button class="action-tile primary-tile" type="button" @click="createMail">
+          <span class="tile-title">Create Mail</span>
+          <span class="tile-subtitle">Start a new campaign</span>
         </button>
-        <button class="secondary-button" type="button">View Orders</button>
-        <button class="secondary-button" type="button">Order History</button>
+        <button class="action-tile" type="button">
+          <span class="tile-title">View Orders</span>
+          <span class="tile-subtitle">Check active jobs</span>
+        </button>
+        <button class="action-tile" type="button">
+          <span class="tile-title">Order History</span>
+          <span class="tile-subtitle">Past campaigns</span>
+        </button>
+        <button class="action-tile" type="button">
+          <span class="tile-title">User Listings</span>
+          <span class="tile-subtitle">Manage saved lists</span>
+        </button>
       </div>
     </div>
   </div>
@@ -82,45 +93,54 @@ const signOut = () => {
 }
 
 .dashboard-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.action-tile {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.primary-button {
-  width: 100%;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
-  color: #ffffff;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 22px rgba(82, 129, 255, 0.3);
-}
-
-.primary-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 26px rgba(82, 129, 255, 0.4);
-}
-
-.secondary-button {
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 10px;
-  border: 1.5px solid rgba(82, 129, 255, 0.45);
-  background: rgba(11, 26, 56, 0.7);
+  gap: 8px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(82, 129, 255, 0.35);
+  background: rgba(11, 26, 56, 0.72);
   color: #c9d8ff;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  min-height: 120px;
 }
 
-.secondary-button:hover {
+.action-tile:hover {
   border-color: #5281ff;
   color: #ffffff;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(82, 129, 255, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(82, 129, 255, 0.25);
+}
+
+.primary-tile {
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(82, 129, 255, 0.35);
+  border-color: rgba(82, 129, 255, 0.7);
+}
+
+.primary-tile:hover {
+  box-shadow: 0 18px 32px rgba(82, 129, 255, 0.45);
+}
+
+.tile-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tile-subtitle {
+  font-size: 0.85rem;
+  color: inherit;
+  opacity: 0.8;
 }
 </style>

@@ -74,7 +74,9 @@
       </form>
 
       <div class="secondary-actions">
-        <button type="button" class="link-button">Forgot password?</button>
+        <button type="button" class="link-button" @click="openResetModal">
+          Forgot password?
+        </button>
         <button type="button" class="outline-button">Sign up</button>
       </div>
 
@@ -82,6 +84,30 @@
         <p><strong>Test Credentials:</strong></p>
         <p>Username: <code>test</code></p>
         <p>Password: <code>test123</code></p>
+      </div>
+    </div>
+
+    <div v-if="showResetModal" class="modal-backdrop" @click="closeResetModal">
+      <div class="modal-card" @click.stop>
+        <h3>Reset your password</h3>
+        <p>Please enter your email to receive a reset link.</p>
+        <input
+          type="email"
+          v-model.trim="resetEmail"
+          placeholder="you@email.com"
+          autocomplete="email"
+        />
+        <div class="modal-actions">
+          <button type="button" class="outline-button" @click="closeResetModal">
+            Cancel
+          </button>
+          <button type="button" class="login-button" @click="sendResetEmail">
+            Send email
+          </button>
+        </div>
+        <div v-if="resetSent" class="success-message modal-success">
+          If that email exists, we sent a reset link.
+        </div>
       </div>
     </div>
   </div>
@@ -99,6 +125,9 @@ const error = ref('')
 const loading = ref(false)
 const showPassword = ref(false)
 const success = ref(false)
+const showResetModal = ref(false)
+const resetEmail = ref('')
+const resetSent = ref(false)
 
 const handleLogin = async () => {
   error.value = ''
@@ -119,6 +148,20 @@ const handleLogin = async () => {
     loading.value = false
     error.value = err?.message || 'An error occurred during login'
   }
+}
+
+const openResetModal = () => {
+  resetSent.value = false
+  resetEmail.value = email.value
+  showResetModal.value = true
+}
+
+const closeResetModal = () => {
+  showResetModal.value = false
+}
+
+const sendResetEmail = () => {
+  resetSent.value = true
 }
 </script>
 
@@ -294,6 +337,75 @@ const handleLogin = async () => {
 
 .outline-button:active {
   transform: translateY(0);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 20, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
+  border: 1px solid rgba(82, 129, 255, 0.5);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-card p {
+  margin: 0;
+  color: #b8c9ff;
+  font-size: 0.95rem;
+}
+
+.modal-card input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(79, 124, 255, 0.3);
+  background-color: rgba(11, 26, 56, 0.8);
+  color: #ffffff;
+  font-size: 0.95rem;
+}
+
+.modal-card input:focus {
+  outline: none;
+  border-color: #5281ff;
+  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.modal-actions .login-button,
+.modal-actions .outline-button {
+  width: auto;
+  margin-top: 0;
+  padding: 10px 16px;
+}
+
+.modal-success {
+  margin-bottom: 0;
 }
 
 .error-message {
