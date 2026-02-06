@@ -35,29 +35,70 @@
             autocomplete="email"
             required
           />
+          <p v-if="email && !emailValid" class="helper-text">
+            Enter a valid email address.
+          </p>
         </div>
 
         <div class="form-group">
           <label for="phone">Phone number</label>
           <input
             id="phone"
-            v-model.trim="phone"
+            v-model="phone"
             type="tel"
             autocomplete="tel"
             placeholder="555-555-5555"
+            inputmode="numeric"
             required
           />
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
+          <div class="password-field">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              @click="showPassword = !showPassword"
+              :title="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <svg
+                v-if="showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                ></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
           <div class="strength-row">
             <span class="strength-label">Strength:</span>
             <span :class="['strength-value', strengthClass]">{{ strengthLabel }}</span>
@@ -88,13 +129,50 @@
 
         <div class="form-group">
           <label for="confirm-password">Re-enter password</label>
-          <input
-            id="confirm-password"
-            v-model="confirmPassword"
-            type="password"
-            autocomplete="new-password"
-            required
-          />
+          <div class="password-field">
+            <input
+              id="confirm-password"
+              v-model="confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              @click="showConfirmPassword = !showConfirmPassword"
+              :title="showConfirmPassword ? 'Hide password' : 'Show password'"
+            >
+              <svg
+                v-if="showConfirmPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                ></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
           <p v-if="confirmPassword && !passwordsMatch" class="helper-text">
             Passwords do not match.
           </p>
@@ -116,7 +194,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -129,6 +207,52 @@ const password = ref('')
 const confirmPassword = ref('')
 const error = ref('')
 const success = ref(false)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+
+const formatFirstName = (value) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+
+const formatLastName = (value) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 10)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+watch(firstName, (value, prev) => {
+  const formatted = formatFirstName(value)
+  if (formatted !== value) firstName.value = formatted
+})
+
+watch(lastName, (value) => {
+  const formatted = formatLastName(value)
+  if (formatted !== value) lastName.value = formatted
+})
+
+watch(phone, (value) => {
+  const formatted = formatPhone(value)
+  if (formatted !== value) phone.value = formatted
+})
+
+const emailValid = computed(() =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)
+)
 
 const passwordRules = computed(() => ({
   length: password.value.length >= 8,
@@ -168,7 +292,8 @@ const canSubmit = computed(() =>
     password.value &&
     confirmPassword.value &&
     passwordsMatch.value &&
-    isStrong.value
+    isStrong.value &&
+    emailValid.value
 )
 
 const handleSignup = () => {
@@ -260,6 +385,40 @@ const goToLogin = () => {
   border-color: #5281ff;
   background-color: rgba(11, 26, 56, 0.95);
   box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #b8c9ff;
+  transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+  color: #5281ff;
+}
+
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
 }
 
 .strength-row {
