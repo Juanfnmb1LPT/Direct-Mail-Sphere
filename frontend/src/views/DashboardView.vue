@@ -6,7 +6,9 @@
       </button>
       <h2>User Dashboard</h2>
       <div class="dashboard-actions">
-        <button class="primary-button" type="button">Create Mail</button>
+        <button class="primary-button" type="button" @click="createMail">
+          Create Mail
+        </button>
         <button class="secondary-button" type="button">View Orders</button>
         <button class="secondary-button" type="button">Order History</button>
       </div>
@@ -18,6 +20,10 @@
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
+const createMail = () => {
+  router.push('/create-mail')
+}
 
 const signOut = () => {
   router.push('/login')

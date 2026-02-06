@@ -3,7 +3,7 @@
     <!-- Search Form -->
     <div class="search-panel">
       <h2>Property Search</h2>
-      
+
       <form @submit.prevent="handleSearch">
         <div class="form-row">
           <div class="form-group">
@@ -15,7 +15,7 @@
               placeholder="e.g., Orlando"
               @input="onCityInput"
             />
-            
+
             <!-- Autocomplete Suggestions for City -->
             <div v-if="suggestions.length > 0" class="suggestions-list">
               <div
@@ -80,6 +80,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 // Fix for Leaflet default icon
+// eslint-disable-next-line no-underscore-dangle
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -114,17 +115,20 @@ onMounted(() => {
 })
 
 // Watch radius changes and update circle size
-watch(() => formData.value.radius, (newRadius) => {
-  if (searchRadiusCircle) {
-    const radiusMeters = newRadius * 1609.34
-    searchRadiusCircle.setRadius(radiusMeters)
+watch(
+  () => formData.value.radius,
+  (newRadius) => {
+    if (searchRadiusCircle) {
+      const radiusMeters = newRadius * 1609.34
+      searchRadiusCircle.setRadius(radiusMeters)
+    }
   }
-})
+)
 
 // Handle city input and get suggestions
 const onCityInput = async (event) => {
   const input = event.target.value.trim()
-  
+
   if (input.length < 2) {
     suggestions.value = []
     return
@@ -139,16 +143,16 @@ const onCityInput = async (event) => {
       limit: '8',
       addressdetails: '1'
     })
-    
+
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?${params.toString()}`
     )
     const data = await response.json()
-    
+
     console.log('City suggestions:', data)
-    
+
     if (Array.isArray(data) && data.length > 0) {
-      suggestions.value = data.map(result => ({
+      suggestions.value = data.map((result) => ({
         lat: parseFloat(result.lat),
         lng: parseFloat(result.lon),
         display: result.display_name
@@ -165,11 +169,11 @@ const onCityInput = async (event) => {
 // Select a suggestion and store location (don't show marker yet)
 const selectSuggestion = (suggestion) => {
   selectedLocation.value = suggestion
-  
+
   // Extract city name from display string
   const parts = suggestion.display.split(',')
   cityInput.value = parts[0].trim()
-  
+
   // Extract state - usually after city and before zip/country
   if (parts.length > 1) {
     const stateAndZip = parts[1].trim()
@@ -189,9 +193,13 @@ const selectSuggestion = (suggestion) => {
     map.removeLayer(searchRadiusCircle)
     searchRadiusCircle = null
   }
-  
+
   suggestions.value = []
-  console.log('Selected location:', suggestion.display, `(${suggestion.lat}, ${suggestion.lng})`)
+  console.log(
+    'Selected location:',
+    suggestion.display,
+    `(${suggestion.lat}, ${suggestion.lng})`
+  )
 }
 
 const updateMapView = (lat, lng, radiusMeters) => {
@@ -268,7 +276,7 @@ const handleSearch = async () => {
 
   try {
     const location = selectedLocation.value
-    
+
     console.log(`Searching at: ${location.display}`)
     console.log(`Coordinates: Lat ${location.lat}, Lng ${location.lng}`)
     console.log(`Radius: ${formData.value.radius} miles`)
