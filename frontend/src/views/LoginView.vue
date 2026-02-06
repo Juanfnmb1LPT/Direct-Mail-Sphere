@@ -77,7 +77,9 @@
         <button type="button" class="link-button" @click="openResetModal">
           Forgot password?
         </button>
-        <button type="button" class="outline-button">Sign up</button>
+        <button type="button" class="outline-button" @click="goToSignup">
+          Sign up
+        </button>
       </div>
 
       <div class="demo-credentials">
@@ -162,6 +164,10 @@ const closeResetModal = () => {
 
 const sendResetEmail = () => {
   resetSent.value = true
+}
+
+const goToSignup = () => {
+  router.push('/signup')
 }
 </script>
 
