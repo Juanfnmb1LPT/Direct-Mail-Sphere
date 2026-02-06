@@ -10,9 +10,9 @@
           <span class="tile-title">Create Mail</span>
           <span class="tile-subtitle">Start a new campaign</span>
         </button>
-        <button class="action-tile" type="button">
-          <span class="tile-title">View Orders</span>
-          <span class="tile-subtitle">Check active jobs</span>
+        <button class="action-tile" type="button" @click="goToMapTest">
+          <span class="tile-title">Map Test</span>
+          <span class="tile-subtitle">Preview the map view</span>
         </button>
         <button class="action-tile" type="button">
           <span class="tile-title">Order History</span>
@@ -34,6 +34,10 @@ const router = useRouter()
 
 const createMail = () => {
   router.push('/create-mail')
+}
+
+const goToMapTest = () => {
+  router.push('/map-test')
 }
 
 const signOut = () => {
