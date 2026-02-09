@@ -1,68 +1,85 @@
 <template>
   <div class="create-mail-container">
-    <button type="button" class="back-button" @click="goToDashboard">
-      Back to dashboard
+    <button type="button" class="back-button" @click="goToTemplates">
+      Back to templates
     </button>
     <div class="create-mail-box">
+      <div class="template-strip">
+        <div class="template-row">
+          <span class="template-chip selected">{{ selectedTemplateLabel }}</span>
+        </div>
+      </div>
       <h2>Create Mail</h2>
       <form @submit.prevent="handleSubmit">
-        <div class="form-group">
-          <label for="address">Address</label>
-          <input
-            id="address"
-            v-model.trim="address"
-            type="text"
-            placeholder="123 Main St, City, ST 00000"
-            autocomplete="street-address"
-            required
-          />
-        </div>
-
-        <div class="two-column">
-          <div class="form-group">
-            <label for="audience-size">Audience size</label>
+        <div class="form-grid">
+          <div
+            v-for="field in formFields"
+            :key="field.id"
+            class="form-group"
+            :class="{ 'span-2': field.fullWidth }"
+          >
+            <label :for="field.id">{{ field.label }}</label>
+            <div v-if="field.type === 'select-search'" class="select-search">
+              <input
+                :id="field.id"
+                v-model.trim="formData[field.id]"
+                :placeholder="field.placeholder"
+                :autocomplete="field.autocomplete"
+                :required="field.required"
+                @focus="onSelectFocus(field.id)"
+                @input="onSelectInput(field.id)"
+                @blur="onSelectBlur(field)"
+              />
+              <div
+                v-if="isDropdownOpen(field.id)"
+                class="select-dropdown"
+              >
+                <button
+                  v-for="option in filteredOptions(field)"
+                  :key="option.value"
+                  type="button"
+                  class="select-option"
+                  @mousedown.prevent="selectOption(field.id, option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
             <input
-              id="audience-size"
-              v-model.number="audienceSize"
-              type="number"
-              min="1"
-              placeholder="250"
-              required
+              v-else-if="field.type !== 'textarea' && field.type !== 'file'"
+              :id="field.id"
+              v-model.trim="formData[field.id]"
+              :type="field.type"
+              :placeholder="field.placeholder"
+              :autocomplete="field.autocomplete"
+              :min="field.min"
+              :required="field.required"
+              @focus="onFieldFocus(field.id)"
+              @blur="onFieldBlur(field)"
             />
-          </div>
-          <div class="form-group">
-            <label for="name">Name</label>
             <input
-              id="name"
-              v-model.trim="name"
-              type="text"
-              placeholder="Your name"
-              autocomplete="name"
-              required
+              v-else-if="field.type === 'file'"
+              :id="field.id"
+              type="file"
+              :accept="field.accept"
+              :required="field.required"
+              @change="handleFileChange($event, field.id)"
             />
+            <textarea
+              v-else
+              :id="field.id"
+              v-model.trim="formData[field.id]"
+              :rows="field.rows || 4"
+              :placeholder="field.placeholder"
+              :required="field.required"
+            ></textarea>
+            <p
+              v-if="shouldShowUrlHelp(field)"
+              class="helper-text"
+            >
+              Enter a valid URL (example: https://example.com).
+            </p>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label for="header">Header</label>
-          <input
-            id="header"
-            v-model.trim="header"
-            type="text"
-            placeholder="Welcome to our spring offer"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="bio">Bio</label>
-          <textarea
-            id="bio"
-            v-model.trim="bio"
-            rows="4"
-            placeholder="Short bio or message"
-            required
-          ></textarea>
         </div>
 
         <div v-if="success" class="success-message">
@@ -77,22 +94,315 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+const route = useRoute()
 const router = useRouter()
 
-const address = ref('')
-const audienceSize = ref(null)
-const name = ref('')
-const header = ref('')
-const bio = ref('')
 const success = ref(false)
+const formData = ref({})
+const fieldState = ref({})
+
+const defaultFields = [
+  {
+    id: 'address',
+    label: 'Address',
+    type: 'text',
+    placeholder: '123 Main St, City, ST 00000',
+    autocomplete: 'street-address',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'audience_size',
+    label: 'Audience size',
+    type: 'number',
+    min: 1,
+    placeholder: '250',
+    required: true
+  },
+  {
+    id: 'name',
+    label: 'Name',
+    type: 'text',
+    placeholder: 'Your name',
+    autocomplete: 'name',
+    required: true
+  },
+  {
+    id: 'header',
+    label: 'Header',
+    type: 'text',
+    placeholder: 'Welcome to our spring offer',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'bio',
+    label: 'Bio',
+    type: 'textarea',
+    placeholder: 'Short bio or message',
+    required: true,
+    fullWidth: true,
+    rows: 4
+  }
+]
+
+const templateOneFields = [
+  {
+    id: 'house_image_url',
+    label: 'House image URL',
+    type: 'url',
+    placeholder: 'https://example.com/house.jpg',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'house_address',
+    label: 'House address',
+    type: 'text',
+    placeholder: '123 Main St',
+    autocomplete: 'street-address',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'city',
+    label: 'City',
+    type: 'text',
+    placeholder: 'City',
+    autocomplete: 'address-level2',
+    required: true
+  },
+  {
+    id: 'state',
+    label: 'State',
+    type: 'select-search',
+    options: [
+      { value: 'AL', label: 'AL - Alabama' },
+      { value: 'AK', label: 'AK - Alaska' },
+      { value: 'AZ', label: 'AZ - Arizona' },
+      { value: 'AR', label: 'AR - Arkansas' },
+      { value: 'CA', label: 'CA - California' },
+      { value: 'CO', label: 'CO - Colorado' },
+      { value: 'CT', label: 'CT - Connecticut' },
+      { value: 'DE', label: 'DE - Delaware' },
+      { value: 'FL', label: 'FL - Florida' },
+      { value: 'GA', label: 'GA - Georgia' },
+      { value: 'HI', label: 'HI - Hawaii' },
+      { value: 'ID', label: 'ID - Idaho' },
+      { value: 'IL', label: 'IL - Illinois' },
+      { value: 'IN', label: 'IN - Indiana' },
+      { value: 'IA', label: 'IA - Iowa' },
+      { value: 'KS', label: 'KS - Kansas' },
+      { value: 'KY', label: 'KY - Kentucky' },
+      { value: 'LA', label: 'LA - Louisiana' },
+      { value: 'ME', label: 'ME - Maine' },
+      { value: 'MD', label: 'MD - Maryland' },
+      { value: 'MA', label: 'MA - Massachusetts' },
+      { value: 'MI', label: 'MI - Michigan' },
+      { value: 'MN', label: 'MN - Minnesota' },
+      { value: 'MS', label: 'MS - Mississippi' },
+      { value: 'MO', label: 'MO - Missouri' },
+      { value: 'MT', label: 'MT - Montana' },
+      { value: 'NE', label: 'NE - Nebraska' },
+      { value: 'NV', label: 'NV - Nevada' },
+      { value: 'NH', label: 'NH - New Hampshire' },
+      { value: 'NJ', label: 'NJ - New Jersey' },
+      { value: 'NM', label: 'NM - New Mexico' },
+      { value: 'NY', label: 'NY - New York' },
+      { value: 'NC', label: 'NC - North Carolina' },
+      { value: 'ND', label: 'ND - North Dakota' },
+      { value: 'OH', label: 'OH - Ohio' },
+      { value: 'OK', label: 'OK - Oklahoma' },
+      { value: 'OR', label: 'OR - Oregon' },
+      { value: 'PA', label: 'PA - Pennsylvania' },
+      { value: 'RI', label: 'RI - Rhode Island' },
+      { value: 'SC', label: 'SC - South Carolina' },
+      { value: 'SD', label: 'SD - South Dakota' },
+      { value: 'TN', label: 'TN - Tennessee' },
+      { value: 'TX', label: 'TX - Texas' },
+      { value: 'UT', label: 'UT - Utah' },
+      { value: 'VT', label: 'VT - Vermont' },
+      { value: 'VA', label: 'VA - Virginia' },
+      { value: 'WA', label: 'WA - Washington' },
+      { value: 'WV', label: 'WV - West Virginia' },
+      { value: 'WI', label: 'WI - Wisconsin' },
+      { value: 'WY', label: 'WY - Wyoming' },
+      { value: 'DC', label: 'DC - District of Columbia' }
+    ],
+    placeholder: 'Start typing a state',
+    autocomplete: 'address-level1',
+    required: true
+  },
+  {
+    id: 'zip_code',
+    label: 'Zip code',
+    type: 'text',
+    placeholder: '00000',
+    autocomplete: 'postal-code',
+    required: true
+  },
+  {
+    id: 'website',
+    label: 'Website',
+    type: 'url',
+    placeholder: 'https://example.com',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  }
+]
+
+const templates = [
+  { id: 'template-1', name: 'Template 1', fields: templateOneFields },
+  { id: 'template-2', name: 'Template 2 - TODO', fields: defaultFields },
+  { id: 'template-3', name: 'Template 3 - TODO', fields: defaultFields },
+  { id: 'template-4', name: 'Template 4 - TODO', fields: defaultFields },
+  { id: 'template-5', name: 'Template 5 - TODO', fields: defaultFields },
+  { id: 'template-6', name: 'Template 6 - TODO', fields: defaultFields },
+  { id: 'template-7', name: 'Template 7 - TODO', fields: defaultFields },
+  { id: 'template-8', name: 'Template 8 - TODO', fields: defaultFields },
+  { id: 'template-9', name: 'Template 9 - TODO', fields: defaultFields },
+  { id: 'template-10', name: 'Template 10 - TODO', fields: defaultFields }
+]
+
+const templateFromRoute = computed(() => String(route.query.template || ''))
+const selectedTemplate = ref(templateFromRoute.value || templates[0].id)
+
+watch(templateFromRoute, (value) => {
+  if (value) selectedTemplate.value = value
+})
+
+const selectedTemplateLabel = computed(() => {
+  const match = templates.find((template) => template.id === selectedTemplate.value)
+  return match ? match.name : 'Template'
+})
+
+const selectedTemplateConfig = computed(() =>
+  templates.find((template) => template.id === selectedTemplate.value)
+)
+
+const formFields = computed(() => selectedTemplateConfig.value?.fields || defaultFields)
+
+watch(
+  formFields,
+  (fields) => {
+    formData.value = fields.reduce((acc, field) => {
+      acc[field.id] = ''
+      return acc
+    }, {})
+    fieldState.value = fields.reduce((acc, field) => {
+      acc[field.id] = { focused: false, touched: false }
+      acc[field.id].open = false
+      return acc
+    }, {})
+  },
+  { immediate: true }
+)
+
+const handleFileChange = (event, fieldId) => {
+  const file = event.target.files?.[0]
+  formData.value[fieldId] = file ? file.name : ''
+}
+
+const onFieldFocus = (fieldId) => {
+  if (!fieldState.value[fieldId]) return
+  fieldState.value[fieldId].focused = true
+}
+
+const onFieldBlur = (field) => {
+  if (!fieldState.value[field.id]) return
+  fieldState.value[field.id].focused = false
+  fieldState.value[field.id].touched = true
+  if (field.type === 'url') normalizeUrlField(field.id)
+}
+
+const onSelectFocus = (fieldId) => {
+  if (!fieldState.value[fieldId]) return
+  fieldState.value[fieldId].focused = true
+  fieldState.value[fieldId].open = true
+}
+
+const onSelectInput = (fieldId) => {
+  if (!fieldState.value[fieldId]) return
+  fieldState.value[fieldId].open = true
+}
+
+const onSelectBlur = (field) => {
+  if (!fieldState.value[field.id]) return
+  fieldState.value[field.id].focused = false
+  fieldState.value[field.id].touched = true
+  fieldState.value[field.id].open = false
+  if (field.type === 'url') normalizeUrlField(field.id)
+}
+
+const isDropdownOpen = (fieldId) => Boolean(fieldState.value[fieldId]?.open)
+
+const filteredOptions = (field) => {
+  const value = String(formData.value[field.id] || '').toLowerCase()
+  return field.options.filter((option) => option.label.toLowerCase().includes(value))
+}
+
+const selectOption = (fieldId, option) => {
+  formData.value[fieldId] = option.label
+  if (fieldState.value[fieldId]) {
+    fieldState.value[fieldId].open = false
+  }
+}
+
+const getSelectSearchValue = (field) => {
+  const rawValue = String(formData.value[field.id] || '').trim().toUpperCase()
+  if (!rawValue) return ''
+  const byValue = field.options.find((option) => option.value === rawValue)
+  if (byValue) return byValue.value
+  const byLabel = field.options.find((option) => option.label.toUpperCase() === rawValue)
+  if (byLabel) return byLabel.value
+  const byPrefix = field.options.find((option) => option.label.toUpperCase().startsWith(rawValue))
+  return byPrefix ? byPrefix.value : rawValue
+}
+
+const normalizeUrlField = (fieldId) => {
+  const value = String(formData.value[fieldId] || '').trim()
+  if (!value) return
+  if (/^https?:\/\//i.test(value)) return
+  formData.value[fieldId] = `https://${value}`
+}
+
+const isValidUrl = (value) => {
+  if (!value) return false
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const shouldShowUrlHelp = (field) => {
+  if (field.type !== 'url') return false
+  const state = fieldState.value[field.id]
+  if (!state) return false
+  return (state.focused || state.touched) && !isValidUrl(formData.value[field.id])
+}
 
 const handleSubmit = () => {
+  formFields.value
+    .filter((field) => field.type === 'url')
+    .forEach((field) => normalizeUrlField(field.id))
+
   const rows = [
-    ['address', 'audience_size', 'name', 'header', 'bio'],
-    [address.value, audienceSize.value, name.value, header.value, bio.value]
+    ['template', ...formFields.value.map((field) => field.id)],
+    [
+      selectedTemplate.value,
+      ...formFields.value.map((field) =>
+        field.type === 'select-search'
+          ? getSelectSearchValue(field)
+          : formData.value[field.id]
+      )
+    ]
   ]
 
   const csv = rows
@@ -116,8 +426,8 @@ const handleSubmit = () => {
   success.value = true
 }
 
-const goToDashboard = () => {
-  router.push('/dashboard')
+const goToTemplates = () => {
+  router.push('/create-mail')
 }
 </script>
 
@@ -173,10 +483,48 @@ const goToDashboard = () => {
   letter-spacing: 0.3px;
 }
 
-.two-column {
+.template-strip {
+  margin-bottom: 20px;
+}
+
+.template-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.template-chip {
+  border: 1.5px solid rgba(82, 129, 255, 0.35);
+  background: rgba(11, 26, 56, 0.72);
+  color: #c9d8ff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.template-chip:hover {
+  border-color: #5281ff;
+  color: #ffffff;
+}
+
+.template-chip.selected {
+  border-color: #5281ff;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
+  box-shadow: 0 10px 18px rgba(82, 129, 255, 0.35);
+}
+
+.form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+}
+
+.form-group.span-2 {
+  grid-column: 1 / -1;
 }
 
 .form-group {
@@ -214,6 +562,49 @@ const goToDashboard = () => {
   border-color: #5281ff;
   background-color: rgba(11, 26, 56, 0.95);
   box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.select-search {
+  position: relative;
+}
+
+.select-search input {
+  width: 100%;
+}
+
+.select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: rgba(11, 26, 56, 0.98);
+  border: 1px solid rgba(82, 129, 255, 0.6);
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 20;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+}
+
+.select-option {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #c9d8ff;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.select-option:hover,
+.select-option:focus {
+  background: rgba(82, 129, 255, 0.18);
+  color: #ffffff;
+  outline: none;
 }
 
 .form-group select {
@@ -283,5 +674,11 @@ const goToDashboard = () => {
   color: #b8ffda;
   border: 1px solid rgba(24, 140, 80, 0.5);
   font-size: 0.9rem;
+}
+
+.helper-text {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #b8c9ff;
 }
 </style>
