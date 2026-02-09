@@ -72,9 +72,6 @@
         <button type="submit" class="primary-button">Create mail</button>
       </form>
 
-      <button type="button" class="link-button" @click="goToDashboard">
-        Back to dashboard
-      </button>
     </div>
   </div>
 </template>
