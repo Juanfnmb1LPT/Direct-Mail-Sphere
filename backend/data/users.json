@@ -1,0 +1,16 @@
+{
+    "users": [
+        {
+            "id": "user-1",
+            "username": "test",
+            "password": "test123",
+            "profile": {
+                "firstName": "Taylor",
+                "lastName": "Morgan",
+                "email": "taylor.morgan@example.com",
+                "phone": "555-123-4567",
+                "company": "Mail Sphere"
+            }
+        }
+    ]
+}

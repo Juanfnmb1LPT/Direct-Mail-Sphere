@@ -1,4 +1,13 @@
 const API_BASE = 'http://localhost:3001'
+const PROFILE_KEY = 'direct-mail-profile'
+
+const cacheProfile = (profile) => {
+    try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+    } catch (error) {
+        // Ignore storage errors.
+    }
+}
 
 export const authService = {
     async login(email, password) {
@@ -17,6 +26,9 @@ export const authService = {
         }
 
         const data = await response.json()
+        if (data?.profile) {
+            cacheProfile(data.profile)
+        }
         return data
     }
 }
