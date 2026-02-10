@@ -22,6 +22,10 @@
           <span class="tile-title">User Listings</span>
           <span class="tile-subtitle">Manage saved lists</span>
         </button>
+        <button class="action-tile" type="button" @click="goToProfile">
+          <span class="tile-title">Update Profile</span>
+          <span class="tile-subtitle">Edit account details</span>
+        </button>
       </div>
     </div>
   </div>
@@ -42,6 +46,10 @@ const goToMapTest = () => {
 
 const signOut = () => {
   router.push('/login')
+}
+
+const goToProfile = () => {
+  router.push('/profile')
 }
 </script>
 
