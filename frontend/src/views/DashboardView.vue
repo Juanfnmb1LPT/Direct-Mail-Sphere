@@ -14,7 +14,7 @@
           <span class="tile-title">Map Test</span>
           <span class="tile-subtitle">Preview the map view</span>
         </button>
-        <button class="action-tile" type="button">
+        <button class="action-tile" type="button" @click="goToOrderHistory">
           <span class="tile-title">Order History</span>
           <span class="tile-subtitle">Past campaigns</span>
         </button>
@@ -50,6 +50,10 @@ const signOut = () => {
 
 const goToProfile = () => {
   router.push('/profile')
+}
+
+const goToOrderHistory = () => {
+  router.push('/orders')
 }
 </script>
 
