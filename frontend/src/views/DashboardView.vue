@@ -18,7 +18,7 @@
           <span class="tile-title">Order History</span>
           <span class="tile-subtitle">Past campaigns</span>
         </button>
-        <button class="action-tile" type="button">
+        <button class="action-tile" type="button" @click="goToListings">
           <span class="tile-title">User Listings</span>
           <span class="tile-subtitle">Manage saved lists</span>
         </button>
@@ -54,6 +54,10 @@ const goToProfile = () => {
 
 const goToOrderHistory = () => {
   router.push('/orders')
+}
+
+const goToListings = () => {
+  router.push('/listings')
 }
 </script>
 
