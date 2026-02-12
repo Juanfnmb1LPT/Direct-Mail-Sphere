@@ -12,7 +12,7 @@
         </div>
         <h2>Create Mail</h2>
         <form @submit.prevent="handleSubmit">
-          <div v-if="isTemplateThree && listingImportField" class="import-block">
+          <div v-if="isTemplateWithListingImport && listingImportField" class="import-block">
             <p class="import-title">Listing import</p>
             <div class="form-group span-2">
               <label :for="listingImportField.id">Import info from listing</label>
@@ -271,7 +271,18 @@ const templateOneFields = [
   }
 ]
 
-const templateTwoFields = [
+const buildTemplateTwoFields = (listingOptions) => [
+  {
+    id: 'listing_import',
+    label: 'Import from listing',
+    type: 'select-search',
+    options: listingOptions,
+    placeholder: 'Search listings by address',
+    autocomplete: 'off',
+    required: false,
+    fullWidth: true,
+    omitFromExport: true
+  },
   {
     id: 'first_name',
     label: 'First name',
@@ -289,11 +300,11 @@ const templateTwoFields = [
     required: true
   },
   {
-    id: 'license_number',
-    label: 'License number',
-    type: 'text',
-    placeholder: 'ABC123456',
-    autocomplete: 'off',
+    id: 'phone',
+    label: 'Phone #',
+    type: 'tel',
+    placeholder: '(555) 123-4567',
+    autocomplete: 'tel',
     required: true
   },
   {
@@ -306,43 +317,41 @@ const templateTwoFields = [
     fullWidth: true
   },
   {
-    id: 'profile_picture_url',
-    label: 'Profile picture URL',
+    id: 'mls_number',
+    label: 'MLS number',
+    type: 'text',
+    placeholder: 'MLS123456',
+    autocomplete: 'off',
+    required: true
+  },
+  {
+    id: 'agent_photo',
+    label: 'Agent photo',
     type: 'url',
-    placeholder: 'https://example.com/profile.jpg',
+    placeholder: 'https://www.example.com/agent.jpg',
     autocomplete: 'url',
     required: true,
     fullWidth: true
   },
   {
-    id: 'background_image_url',
-    label: 'Background image URL',
+    id: 'company_logo',
+    label: 'Company logo',
     type: 'url',
-    placeholder: 'https://example.com/background.jpg',
+    placeholder: 'https://www.example.com/logo.png',
     autocomplete: 'url',
     required: true,
     fullWidth: true
   },
   {
-    id: 'website',
-    label: 'Website',
-    type: 'url',
-    placeholder: 'https://example.com',
-    autocomplete: 'url',
-    required: true,
-    fullWidth: true
-  },
-  {
-    id: 'address_line',
-    label: 'Address line',
+    id: 'listing_address',
+    label: 'Address',
     type: 'text',
     placeholder: '123 Main St',
     autocomplete: 'street-address',
-    required: true,
-    fullWidth: true
+    required: true
   },
   {
-    id: 'city',
+    id: 'listing_city',
     label: 'City',
     type: 'text',
     placeholder: 'City',
@@ -350,68 +359,15 @@ const templateTwoFields = [
     required: true
   },
   {
-    id: 'state',
+    id: 'listing_state',
     label: 'State',
-    type: 'select-search',
-    options: [
-      { value: 'AL', label: 'AL - Alabama' },
-      { value: 'AK', label: 'AK - Alaska' },
-      { value: 'AZ', label: 'AZ - Arizona' },
-      { value: 'AR', label: 'AR - Arkansas' },
-      { value: 'CA', label: 'CA - California' },
-      { value: 'CO', label: 'CO - Colorado' },
-      { value: 'CT', label: 'CT - Connecticut' },
-      { value: 'DE', label: 'DE - Delaware' },
-      { value: 'FL', label: 'FL - Florida' },
-      { value: 'GA', label: 'GA - Georgia' },
-      { value: 'HI', label: 'HI - Hawaii' },
-      { value: 'ID', label: 'ID - Idaho' },
-      { value: 'IL', label: 'IL - Illinois' },
-      { value: 'IN', label: 'IN - Indiana' },
-      { value: 'IA', label: 'IA - Iowa' },
-      { value: 'KS', label: 'KS - Kansas' },
-      { value: 'KY', label: 'KY - Kentucky' },
-      { value: 'LA', label: 'LA - Louisiana' },
-      { value: 'ME', label: 'ME - Maine' },
-      { value: 'MD', label: 'MD - Maryland' },
-      { value: 'MA', label: 'MA - Massachusetts' },
-      { value: 'MI', label: 'MI - Michigan' },
-      { value: 'MN', label: 'MN - Minnesota' },
-      { value: 'MS', label: 'MS - Mississippi' },
-      { value: 'MO', label: 'MO - Missouri' },
-      { value: 'MT', label: 'MT - Montana' },
-      { value: 'NE', label: 'NE - Nebraska' },
-      { value: 'NV', label: 'NV - Nevada' },
-      { value: 'NH', label: 'NH - New Hampshire' },
-      { value: 'NJ', label: 'NJ - New Jersey' },
-      { value: 'NM', label: 'NM - New Mexico' },
-      { value: 'NY', label: 'NY - New York' },
-      { value: 'NC', label: 'NC - North Carolina' },
-      { value: 'ND', label: 'ND - North Dakota' },
-      { value: 'OH', label: 'OH - Ohio' },
-      { value: 'OK', label: 'OK - Oklahoma' },
-      { value: 'OR', label: 'OR - Oregon' },
-      { value: 'PA', label: 'PA - Pennsylvania' },
-      { value: 'RI', label: 'RI - Rhode Island' },
-      { value: 'SC', label: 'SC - South Carolina' },
-      { value: 'SD', label: 'SD - South Dakota' },
-      { value: 'TN', label: 'TN - Tennessee' },
-      { value: 'TX', label: 'TX - Texas' },
-      { value: 'UT', label: 'UT - Utah' },
-      { value: 'VT', label: 'VT - Vermont' },
-      { value: 'VA', label: 'VA - Virginia' },
-      { value: 'WA', label: 'WA - Washington' },
-      { value: 'WV', label: 'WV - West Virginia' },
-      { value: 'WI', label: 'WI - Wisconsin' },
-      { value: 'WY', label: 'WY - Wyoming' },
-      { value: 'DC', label: 'DC - District of Columbia' }
-    ],
-    placeholder: 'Start typing a state',
+    type: 'text',
+    placeholder: 'ST',
     autocomplete: 'address-level1',
     required: true
   },
   {
-    id: 'zip_code',
+    id: 'listing_zip',
     label: 'Zip code',
     type: 'text',
     placeholder: '00000',
@@ -419,12 +375,13 @@ const templateTwoFields = [
     required: true
   },
   {
-    id: 'phone',
-    label: 'Phone',
-    type: 'tel',
-    placeholder: '(555) 123-4567',
-    autocomplete: 'tel',
-    required: true
+    id: 'listing_img1',
+    label: 'Img 1',
+    type: 'url',
+    placeholder: 'https://www.example.com/photo-1.jpg',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
   }
 ]
 
@@ -503,10 +460,25 @@ const buildTemplateThreeFields = (listingOptions) => [
     id: 'listing_address',
     label: 'Address',
     type: 'text',
-    placeholder: '123 Main St, City, ST 00000',
+    placeholder: '123 Main St',
     autocomplete: 'street-address',
-    required: true,
-    fullWidth: true
+    required: true
+  },
+  {
+    id: 'listing_city',
+    label: 'City',
+    type: 'text',
+    placeholder: 'City',
+    autocomplete: 'address-level2',
+    required: true
+  },
+  {
+    id: 'listing_state',
+    label: 'State',
+    type: 'text',
+    placeholder: 'ST',
+    autocomplete: 'address-level1',
+    required: true
   },
   {
     id: 'listing_beds',
@@ -554,7 +526,7 @@ const buildTemplateThreeFields = (listingOptions) => [
 
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean Your Finances', fields: templateOneFields, image: new URL('../assets/spring_clean.png', import.meta.url).href, backImage: new URL('../assets/spring_clean_back.png', import.meta.url).href },
-  { id: 'template-2', name: 'Template 2- Listing Coming Soon', fields: templateTwoFields, image: new URL('../assets/coming_soon_card.png', import.meta.url).href, backImage: new URL('../assets/coming_soon_card_back.png', import.meta.url).href },
+  { id: 'template-2', name: 'Template 2- Listing Coming Soon', fields: defaultFields, image: new URL('../assets/coming_soon_card.png', import.meta.url).href, backImage: new URL('../assets/coming_soon_card_back.png', import.meta.url).href },
   { id: 'template-3', name: 'Template 3 - Just Sold', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-4', name: 'Template 4 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-5', name: 'Template 5 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
@@ -581,28 +553,42 @@ const selectedTemplateConfig = computed(() =>
   templates.find((template) => template.id === selectedTemplate.value)
 )
 
+const formatListingLabel = (listing) => {
+  const address = listing.address || ''
+  const city = listing.city || ''
+  const state = listing.state || ''
+  return [address, city, state].filter(Boolean).join(', ')
+}
+
 const listingOptions = computed(() =>
   listings.value.map((listing) => ({
     value: listing.id,
-    label: listing.address
+    label: formatListingLabel(listing)
   }))
 )
 
 const formFields = computed(() => {
+  if (selectedTemplate.value === 'template-2') {
+    return buildTemplateTwoFields(listingOptions.value)
+  }
   if (selectedTemplate.value === 'template-3') {
     return buildTemplateThreeFields(listingOptions.value)
   }
   return selectedTemplateConfig.value?.fields || defaultFields
 })
 
-const isTemplateThree = computed(() => selectedTemplate.value === 'template-3')
+const isTemplateWithListingImport = computed(() =>
+  ['template-2', 'template-3'].includes(selectedTemplate.value)
+)
 
 const listingImportField = computed(() =>
   formFields.value.find((field) => field.id === 'listing_import')
 )
 
 const visibleFields = computed(() =>
-  formFields.value.filter((field) => field.id !== 'listing_import')
+  formFields.value.filter(
+    (field) => field.id !== 'listing_import' && !field.omitFromForm
+  )
 )
 
 const fieldProfileMap = {
@@ -631,12 +617,33 @@ const applyProfileToForm = (fields) => {
 const applyListingToForm = (listingId) => {
   const listing = listings.value.find((item) => item.id === listingId)
   if (!listing) return
-  formData.value.listing_address = listing.address || ''
-  formData.value.listing_beds = listing.beds ?? ''
-  formData.value.listing_baths = listing.baths ?? ''
-  formData.value.listing_sqft = listing.sqft ?? ''
-  formData.value.listing_price = listing.price ?? ''
-  formData.value.listing_img1 = listing.img1 || ''
+  if ('listing_address' in formData.value) {
+    formData.value.listing_address = listing.address || ''
+  }
+  if ('listing_city' in formData.value) {
+    formData.value.listing_city = listing.city || ''
+  }
+  if ('listing_state' in formData.value) {
+    formData.value.listing_state = listing.state || ''
+  }
+  if ('listing_zip' in formData.value) {
+    formData.value.listing_zip = listing.zip || ''
+  }
+  if ('listing_beds' in formData.value) {
+    formData.value.listing_beds = listing.beds ?? ''
+  }
+  if ('listing_baths' in formData.value) {
+    formData.value.listing_baths = listing.baths ?? ''
+  }
+  if ('listing_sqft' in formData.value) {
+    formData.value.listing_sqft = listing.sqft ?? ''
+  }
+  if ('listing_price' in formData.value) {
+    formData.value.listing_price = listing.price ?? ''
+  }
+  if ('listing_img1' in formData.value) {
+    formData.value.listing_img1 = listing.img1 || ''
+  }
 }
 
 watch(

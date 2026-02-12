@@ -16,7 +16,7 @@
           v-model.trim="searchQuery"
           type="text"
           class="search-input"
-          placeholder="Search by address"
+          placeholder="Search by address, city, state, or zip"
           aria-label="Search listings"
         />
         <button type="button" class="primary-button" @click="openCreate">
@@ -36,7 +36,7 @@
         </div>
         <div v-for="listing in filteredListings" :key="listing.id" class="listing-card">
           <div class="listing-info">
-            <h3>{{ listing.address }}</h3>
+            <h3>{{ formatListingLabel(listing) }}</h3>
             <p>
               {{ listing.beds }} bd · {{ listing.baths }} ba · {{ listing.sqft }} sqft
             </p>
@@ -64,14 +64,50 @@
         <h3>{{ editingId ? 'Edit listing' : 'Add listing' }}</h3>
         <form class="listing-form" @submit.prevent="handleSubmit">
           <div class="form-grid">
-            <div class="form-group span-2">
+            <div class="form-group">
               <label for="address">Address</label>
               <input
                 id="address"
                 v-model.trim="form.address"
                 type="text"
-                placeholder="123 Main St, City, ST 00000"
+                placeholder="123 Main St"
                 autocomplete="street-address"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="city">City</label>
+              <input
+                id="city"
+                v-model.trim="form.city"
+                type="text"
+                placeholder="City"
+                autocomplete="address-level2"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="state">State</label>
+              <input
+                id="state"
+                v-model.trim="form.state"
+                type="text"
+                placeholder="ST"
+                autocomplete="address-level1"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="zip">Zip code</label>
+              <input
+                id="zip"
+                v-model.trim="form.zip"
+                type="text"
+                placeholder="00000"
+                autocomplete="postal-code"
                 required
               />
             </div>
@@ -194,6 +230,9 @@ const searchQuery = ref('')
 
 const emptyForm = () => ({
   address: '',
+  city: '',
+  state: '',
+  zip: '',
   beds: '',
   baths: '',
   sqft: '',
@@ -209,7 +248,7 @@ const filteredListings = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
   if (!query) return listings.value
   return listings.value.filter((listing) =>
-    String(listing.address || '').toLowerCase().includes(query)
+    formatListingLabel(listing).toLowerCase().includes(query)
   )
 })
 
@@ -245,6 +284,9 @@ const handleSubmit = () => {
   const payload = {
     id: editingId.value || `listing-${Date.now()}`,
     address: form.value.address,
+    city: form.value.city,
+    state: form.value.state,
+    zip: form.value.zip,
     beds: Number(form.value.beds),
     baths: Number(form.value.baths),
     sqft: parseNumeric(form.value.sqft),
@@ -270,6 +312,9 @@ const startEdit = (listing) => {
   editingId.value = listing.id
   form.value = {
     address: listing.address,
+    city: listing.city || '',
+    state: listing.state || '',
+    zip: listing.zip || '',
     beds: listing.beds,
     baths: listing.baths,
     sqft: formatNumberForInput(listing.sqft),
@@ -319,7 +364,7 @@ const normalizeUrlField = (fieldId) => {
 
 const removeListing = (id) => {
   const target = listings.value.find((listing) => listing.id === id)
-  const label = target?.address ? `\n${target.address}` : ''
+  const label = target ? `\n${formatListingLabel(target)}` : ''
   if (!window.confirm(`Delete this listing?${label}`)) return
   listings.value = listings.value.filter((listing) => listing.id !== id)
   if (editingId.value === id) {
@@ -329,6 +374,14 @@ const removeListing = (id) => {
 }
 
 const formatNumber = (value) => Number(value || 0).toLocaleString('en-US')
+
+const formatListingLabel = (listing) => {
+  const address = listing.address || ''
+  const city = listing.city || ''
+  const state = listing.state || ''
+  const zip = listing.zip || ''
+  return [address, city, state, zip].filter(Boolean).join(', ')
+}
 
 const goToDashboard = () => {
   router.push('/dashboard')
