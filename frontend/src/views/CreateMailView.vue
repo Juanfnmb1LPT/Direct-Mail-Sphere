@@ -108,8 +108,9 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { profileService } from '../services/profileService'
 
 const route = useRoute()
 const router = useRouter()
@@ -118,6 +119,7 @@ const success = ref(false)
 const formData = ref({})
 const fieldState = ref({})
 const showBack = ref(false)
+const profile = ref(null)
 
 const defaultFields = [
   {
@@ -166,99 +168,63 @@ const defaultFields = [
 
 const templateOneFields = [
   {
-    id: 'house_image_url',
-    label: 'House image URL',
+    id: 'first_name',
+    label: 'First name',
+    type: 'text',
+    placeholder: 'John',
+    autocomplete: 'given-name',
+    required: true
+  },
+  {
+    id: 'last_name',
+    label: 'Last name',
+    type: 'text',
+    placeholder: 'Doe',
+    autocomplete: 'family-name',
+    required: true
+  },
+  {
+    id: 'phone',
+    label: 'Phone #',
+    type: 'tel',
+    placeholder: '(555) 123-4567',
+    autocomplete: 'tel',
+    required: true
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    type: 'email',
+    placeholder: 'john@example.com',
+    autocomplete: 'email',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'mls_number',
+    label: 'MLS number',
+    type: 'text',
+    placeholder: 'MLS123456',
+    autocomplete: 'off',
+    required: true
+  },
+  {
+    id: 'agent_photo',
+    label: 'Agent photo',
     type: 'url',
-    placeholder: 'https://example.com/house.jpg',
+    placeholder: 'https://example.com/agent.jpg',
     autocomplete: 'url',
     required: true,
     fullWidth: true
   },
   {
-    id: 'house_address',
-    label: 'House address',
-    type: 'text',
-    placeholder: '123 Main St',
-    autocomplete: 'street-address',
+    id: 'company_logo',
+    label: 'Company logo',
+    type: 'url',
+    placeholder: 'https://example.com/logo.png',
+    autocomplete: 'url',
     required: true,
     fullWidth: true
-  },
-  {
-    id: 'city',
-    label: 'City',
-    type: 'text',
-    placeholder: 'City',
-    autocomplete: 'address-level2',
-    required: true
-  },
-  {
-    id: 'state',
-    label: 'State',
-    type: 'select-search',
-    options: [
-      { value: 'AL', label: 'AL - Alabama' },
-      { value: 'AK', label: 'AK - Alaska' },
-      { value: 'AZ', label: 'AZ - Arizona' },
-      { value: 'AR', label: 'AR - Arkansas' },
-      { value: 'CA', label: 'CA - California' },
-      { value: 'CO', label: 'CO - Colorado' },
-      { value: 'CT', label: 'CT - Connecticut' },
-      { value: 'DE', label: 'DE - Delaware' },
-      { value: 'FL', label: 'FL - Florida' },
-      { value: 'GA', label: 'GA - Georgia' },
-      { value: 'HI', label: 'HI - Hawaii' },
-      { value: 'ID', label: 'ID - Idaho' },
-      { value: 'IL', label: 'IL - Illinois' },
-      { value: 'IN', label: 'IN - Indiana' },
-      { value: 'IA', label: 'IA - Iowa' },
-      { value: 'KS', label: 'KS - Kansas' },
-      { value: 'KY', label: 'KY - Kentucky' },
-      { value: 'LA', label: 'LA - Louisiana' },
-      { value: 'ME', label: 'ME - Maine' },
-      { value: 'MD', label: 'MD - Maryland' },
-      { value: 'MA', label: 'MA - Massachusetts' },
-      { value: 'MI', label: 'MI - Michigan' },
-      { value: 'MN', label: 'MN - Minnesota' },
-      { value: 'MS', label: 'MS - Mississippi' },
-      { value: 'MO', label: 'MO - Missouri' },
-      { value: 'MT', label: 'MT - Montana' },
-      { value: 'NE', label: 'NE - Nebraska' },
-      { value: 'NV', label: 'NV - Nevada' },
-      { value: 'NH', label: 'NH - New Hampshire' },
-      { value: 'NJ', label: 'NJ - New Jersey' },
-      { value: 'NM', label: 'NM - New Mexico' },
-      { value: 'NY', label: 'NY - New York' },
-      { value: 'NC', label: 'NC - North Carolina' },
-      { value: 'ND', label: 'ND - North Dakota' },
-      { value: 'OH', label: 'OH - Ohio' },
-      { value: 'OK', label: 'OK - Oklahoma' },
-      { value: 'OR', label: 'OR - Oregon' },
-      { value: 'PA', label: 'PA - Pennsylvania' },
-      { value: 'RI', label: 'RI - Rhode Island' },
-      { value: 'SC', label: 'SC - South Carolina' },
-      { value: 'SD', label: 'SD - South Dakota' },
-      { value: 'TN', label: 'TN - Tennessee' },
-      { value: 'TX', label: 'TX - Texas' },
-      { value: 'UT', label: 'UT - Utah' },
-      { value: 'VT', label: 'VT - Vermont' },
-      { value: 'VA', label: 'VA - Virginia' },
-      { value: 'WA', label: 'WA - Washington' },
-      { value: 'WV', label: 'WV - West Virginia' },
-      { value: 'WI', label: 'WI - Wisconsin' },
-      { value: 'WY', label: 'WY - Wyoming' },
-      { value: 'DC', label: 'DC - District of Columbia' }
-    ],
-    placeholder: 'Start typing a state',
-    autocomplete: 'address-level1',
-    required: true
-  },
-  {
-    id: 'zip_code',
-    label: 'Zip code',
-    type: 'text',
-    placeholder: '00000',
-    autocomplete: 'postal-code',
-    required: true
   },
   {
     id: 'website',
@@ -459,6 +425,29 @@ const selectedTemplateConfig = computed(() =>
 
 const formFields = computed(() => selectedTemplateConfig.value?.fields || defaultFields)
 
+const fieldProfileMap = {
+  first_name: 'firstName',
+  last_name: 'lastName',
+  phone: 'phone',
+  email: 'email',
+  mls_number: 'mlsNumber',
+  agent_photo: 'agentPhoto',
+  company_logo: 'companyLogo'
+}
+
+const applyProfileToForm = (fields) => {
+  if (!profile.value || !fields?.length) return
+
+  fields.forEach((field) => {
+    const profileKey = fieldProfileMap[field.id]
+    if (!profileKey) return
+    const value = profile.value?.[profileKey]
+    if (value && !formData.value[field.id]) {
+      formData.value[field.id] = value
+    }
+  })
+}
+
 watch(
   formFields,
   (fields) => {
@@ -471,9 +460,22 @@ watch(
       acc[field.id].open = false
       return acc
     }, {})
+    applyProfileToForm(fields)
   },
   { immediate: true }
 )
+
+const loadProfile = async () => {
+  const result = await profileService.getProfile()
+  if (result?.success) {
+    profile.value = result.profile
+    applyProfileToForm(formFields.value)
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+})
 
 const handleFileChange = (event, fieldId) => {
   const file = event.target.files?.[0]

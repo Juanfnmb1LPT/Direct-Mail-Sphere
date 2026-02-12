@@ -1,16 +1,19 @@
 {
-    "users": [
-        {
-            "id": "user-1",
-            "username": "test",
-            "password": "test123",
-            "profile": {
-                "firstName": "Taylor",
-                "lastName": "Morgan",
-                "email": "taylor.morgan@example.com",
-                "phone": "555-123-4567",
-                "company": "Mail Sphere"
-            }
-        }
-    ]
+  "users": [
+    {
+      "id": "user-1",
+      "username": "test",
+      "password": "test123",
+      "profile": {
+        "firstName": "Niklas",
+        "lastName": "Edstrom",
+        "email": "Niklas.Edstrom@lpt.com",
+        "phone": "407-435-2149",
+        "company": "Mail Sphere",
+        "mlsNumber": "MLS123456",
+        "agentPhoto": "https://www.example.com/Niklas.jpg",
+        "companyLogo": "https://www.example.com/LPT.jpg"
+      }
+    }
+  ]
 }

@@ -24,7 +24,9 @@ const defaultStore = {
                 lastName: 'Morgan',
                 email: 'taylor.morgan@example.com',
                 phone: '555-123-4567',
-                company: 'Mail Sphere'
+                mlsNumber: 'MLS123456',
+                agentPhoto: 'https://example.com/agent.jpg',
+                companyLogo: 'https://example.com/logo.png'
             }
         }
     ]

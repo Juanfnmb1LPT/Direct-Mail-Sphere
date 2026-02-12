@@ -41,7 +41,7 @@
         </div>
 
         <div class="form-group">
-          <label for="phone">Phone number</label>
+          <label for="phone">Phone #</label>
           <input
             id="phone"
             v-model="phone"
@@ -53,12 +53,35 @@
         </div>
 
         <div class="form-group">
-          <label for="company">Company</label>
+          <label for="mls-number">MLS number</label>
           <input
-            id="company"
-            v-model.trim="company"
+            id="mls-number"
+            v-model.trim="mlsNumber"
             type="text"
-            autocomplete="organization"
+            autocomplete="off"
+            placeholder="MLS123456"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="agent-photo">Agent photo</label>
+          <input
+            id="agent-photo"
+            v-model.trim="agentPhoto"
+            type="url"
+            autocomplete="url"
+            placeholder="https://example.com/agent.jpg"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="company-logo">Company logo</label>
+          <input
+            id="company-logo"
+            v-model.trim="companyLogo"
+            type="url"
+            autocomplete="url"
+            placeholder="https://example.com/logo.png"
           />
         </div>
 
@@ -88,7 +111,9 @@ const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
 const phone = ref('')
-const company = ref('')
+const mlsNumber = ref('')
+const agentPhoto = ref('')
+const companyLogo = ref('')
 const saving = ref(false)
 const success = ref(false)
 const loading = ref(false)
@@ -115,7 +140,9 @@ const setProfile = (profile) => {
   lastName.value = profile?.lastName || ''
   email.value = profile?.email || ''
   phone.value = profile?.phone || ''
-  company.value = profile?.company || ''
+  mlsNumber.value = profile?.mlsNumber || ''
+  agentPhoto.value = profile?.agentPhoto || ''
+  companyLogo.value = profile?.companyLogo || ''
 }
 
 const loadProfile = async () => {
@@ -154,7 +181,9 @@ const saveProfile = async () => {
     lastName: lastName.value,
     email: email.value,
     phone: phone.value,
-    company: company.value
+    mlsNumber: mlsNumber.value,
+    agentPhoto: agentPhoto.value,
+    companyLogo: companyLogo.value
   })
 
   saving.value = false
