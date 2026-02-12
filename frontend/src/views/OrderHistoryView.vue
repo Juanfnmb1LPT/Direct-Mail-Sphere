@@ -70,26 +70,16 @@
       </div>
     </div>
 
-    <button type="button" class="back-button" @click="goToDashboard">
-      Back to Dashboard
-    </button>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 
 // Mock data - empty for now
 const currentOrders = ref([])
 const pastOrders = ref([])
 const canceledOrders = ref([])
-
-const goToDashboard = () => {
-  router.push('/dashboard')
-}
 </script>
 
 <style scoped>
@@ -107,7 +97,7 @@ const goToDashboard = () => {
 }
 
 .order-history-header h1 {
-  color: #ffffff;
+  color: #0f1f3d;
   font-size: clamp(2rem, 6vw, 2.5rem);
   font-weight: 700;
   margin: 0;
@@ -116,7 +106,7 @@ const goToDashboard = () => {
 }
 
 .subtitle {
-  color: #b8c9ff;
+  color: #3d5aff;
   font-size: 1.1rem;
   margin: 0;
   font-weight: 500;
@@ -244,27 +234,6 @@ const goToDashboard = () => {
 
 .order-status.canceled {
   background: linear-gradient(135deg, #d74545, #a53535);
-}
-
-.back-button {
-  display: block;
-  margin: 0 auto;
-  padding: 10px 20px;
-  background: transparent;
-  color: #b8c9ff;
-  border: 1px solid #3d5aff;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.back-button:hover {
-  color: #ffffff;
-  border-color: #5281ff;
-  background: rgba(82, 129, 255, 0.1);
-  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {

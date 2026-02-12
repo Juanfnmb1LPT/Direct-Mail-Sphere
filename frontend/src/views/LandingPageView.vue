@@ -3,44 +3,34 @@
     <!-- Navigation Banner -->
     <nav class="navbar">
       <div class="nav-container">
-        <h1 class="nav-title">Direct Mail Sphere</h1>
-        <button
+        <div class="nav-brand">
+          <h1 class="nav-title">DIRECT MAIL SPHERE</h1>
+          <div class="nav-underline"></div>
+          <p class="nav-subtitle">
+            Revolutionizing direct mail marketing with cutting-edge targeting and campaign management
+          </p>
+          <p class="nav-description">
+            Reach your audience effectively with our advanced platform designed for modern marketers. Create, manage, and track direct mail campaigns all in one place.
+          </p>
+        </div>
+        <a
           v-if="!isSignedIn"
           class="signin-button"
-          @click="goToLogin"
+          href="#"
+          @click.prevent="goToLogin"
         >
-          Sign In
-        </button>
-        <button
+          LOGIN
+        </a>
+        <a
           v-else
           class="dashboard-button"
-          @click="goToDashboard"
+          href="#"
+          @click.prevent="goToDashboard"
         >
-          Dashboard
-        </button>
+          DASHBOARD
+        </a>
       </div>
     </nav>
-
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-content">
-        <h2>Welcome to Direct Mail Sphere</h2>
-        <p class="hero-subtitle">
-          Revolutionizing direct mail marketing with cutting-edge targeting and campaign management
-        </p>
-        <p class="hero-description">
-          Reach your audience effectively with our advanced platform designed for modern marketers.
-          Create, manage, and track direct mail campaigns all in one place.
-        </p>
-        <button
-          v-if="!isSignedIn"
-          class="cta-button"
-          @click="goToLogin"
-        >
-          Get Started
-        </button>
-      </div>
-    </section>
 
     <!-- About Platform Section -->
     <section class="about-section">
@@ -140,8 +130,25 @@
 
           <!-- Card 3: More to Come -->
           <div class="feature-card">
-            <div class="card-image-container">
-              <img src="@/assets/placeholder.png" alt="Placeholder Card" class="card-image" />
+            <div class="card-image-container clickable" @click="openCardModal('more_to_come')">
+              <button class="nav-arrow left-arrow" @click.stop="toggleCardSide('more_to_come', 'prev')">
+                &#10094;
+              </button>
+              <img
+                v-if="!showingBack.more_to_come"
+                src="@/assets/spring_clean.png"
+                alt="More to Come Card Front"
+                class="card-image"
+              />
+              <img
+                v-else
+                src="@/assets/spring_clean_back.png"
+                alt="More to Come Card Back"
+                class="card-image"
+              />
+              <button class="nav-arrow right-arrow" @click.stop="toggleCardSide('more_to_come', 'next')">
+                &#10095;
+              </button>
             </div>
             <h3 class="card-title">More to Come</h3>
             <p class="card-description">
@@ -199,7 +206,8 @@ const isSignedIn = ref(false)
 const selectedCard = ref(null)
 const showingBack = ref({
   coming_soon: false,
-  spring_clean: false
+  spring_clean: false,
+  more_to_come: false
 })
 
 const cardImages = {
@@ -208,6 +216,10 @@ const cardImages = {
     back: new URL('@/assets/coming_soon_card_back.png', import.meta.url).href
   },
   spring_clean: {
+    front: new URL('@/assets/spring_clean.png', import.meta.url).href,
+    back: new URL('@/assets/spring_clean_back.png', import.meta.url).href
+  },
+  more_to_come: {
     front: new URL('@/assets/spring_clean.png', import.meta.url).href,
     back: new URL('@/assets/spring_clean_back.png', import.meta.url).href
   }
@@ -253,54 +265,106 @@ const toggleCardSide = (cardName, direction) => {
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   display: flex;
   flex-direction: column;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Navigation Bar */
 .navbar {
   background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border-bottom: 2px solid #3d5aff;
+  border: none;
   padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  position: sticky;
-  top: 0;
+  box-shadow: 0 8px 24px rgba(11, 22, 48, 0.22);
+  position: relative;
+  margin: 20px 24px 0;
+  border-radius: 16px;
   z-index: 100;
 }
 
 .nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px 24px;
+  width: 100%;
+  margin: 0;
+  padding: 32px;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  min-height: 420px;
+  position: relative;
+}
+
+.nav-brand {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .nav-title {
-  font-size: 28px;
+  font-size: clamp(2rem, 4.8vw, 4.6rem);
   font-weight: 700;
   color: #ffffff;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.nav-underline {
+  width: min(420px, 62vw);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  margin: 14px auto 0;
+}
+
+.nav-subtitle {
+  margin-top: 20px;
+  max-width: 860px;
+  font-size: 21px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.4;
+}
+
+.nav-description {
+  margin-top: 10px;
+  max-width: 740px;
+  font-size: 15px;
+  color: rgba(226, 236, 255, 0.95);
+  line-height: 1.6;
 }
 
 .signin-button,
 .dashboard-button {
-  padding: 10px 24px;
-  border-radius: 6px;
-  border: 2px solid #5281ff;
-  background: rgba(82, 129, 255, 0.1);
-  color: #5281ff;
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
   font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 14px;
+  font-size: 17px;
 }
 
 .signin-button:hover,
 .dashboard-button:hover {
-  background: #5281ff;
+  background: transparent;
   color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(82, 129, 255, 0.3);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transform: none;
+  box-shadow: none;
+}
+
+.signin-button:focus-visible,
+.dashboard-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 6px;
+  border-radius: 4px;
 }
 
 /* Hero Section */
@@ -376,16 +440,18 @@ const toggleCardSide = (cardName, direction) => {
 }
 
 .about-title {
-  font-size: 36px;
+  font-size: clamp(2rem, 3.2vw, 2.35rem);
   font-weight: 700;
   color: #0f1f3d;
   margin-bottom: 12px;
+  letter-spacing: -0.01em;
 }
 
 .about-tagline {
   font-size: 18px;
   color: #3d5aff;
   font-weight: 500;
+  line-height: 1.5;
 }
 
 .about-content {
@@ -452,11 +518,12 @@ const toggleCardSide = (cardName, direction) => {
 }
 
 .section-title {
-  font-size: 36px;
+  font-size: clamp(2rem, 3.2vw, 2.35rem);
   font-weight: 700;
   color: #0f1f3d;
   text-align: center;
   margin-bottom: 60px;
+  letter-spacing: -0.01em;
 }
 
 .cards-grid {
@@ -486,16 +553,17 @@ const toggleCardSide = (cardName, direction) => {
 }
 
 .card-title {
-  font-size: 22px;
+  font-size: 23px;
   font-weight: 700;
   color: #0f1f3d;
   margin: 24px 24px 16px 24px;
+  line-height: 1.35;
 }
 
 .card-description {
-  font-size: 15px;
+  font-size: 15.5px;
   color: #555;
-  line-height: 1.6;
+  line-height: 1.65;
   margin: 0 24px 20px 24px;
   flex-grow: 1;
 }
@@ -721,7 +789,35 @@ const toggleCardSide = (cardName, direction) => {
   }
 
   .nav-title {
-    font-size: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .nav-subtitle {
+    margin-top: 16px;
+    font-size: 18px;
+  }
+
+  .nav-description {
+    margin-top: 8px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .navbar {
+    margin: 14px 14px 0;
+    border-radius: 10px;
+  }
+
+  .nav-container {
+    min-height: 310px;
+    padding: 22px 16px;
+  }
+
+  .signin-button,
+  .dashboard-button {
+    top: 14px;
+    right: 14px;
+    font-size: 14px;
   }
 
   .section-title {

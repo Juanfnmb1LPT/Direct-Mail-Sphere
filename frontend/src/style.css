@@ -2,13 +2,166 @@
     box-sizing: border-box;
 }
 
+:root {
+        --dms-bg-start: #f5f8ff;
+        --dms-bg-end: #d6e6ff;
+        --dms-surface-start: #0f1f3d;
+        --dms-surface-end: #0b1630;
+        --dms-border: #3d5aff;
+        --dms-border-soft: rgba(82, 129, 255, 0.35);
+        --dms-text-primary: #ffffff;
+        --dms-text-muted: #c9d8ff;
+        --dms-text-body: #0b1630;
+        --dms-input-bg: rgba(11, 26, 56, 0.82);
+        --dms-input-bg-focus: rgba(11, 26, 56, 0.95);
+        --dms-focus-ring: rgba(82, 129, 255, 0.2);
+        --dms-primary-start: #5281ff;
+        --dms-primary-end: #3b6cff;
+}
+
 body {
     margin: 0;
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background-color: #d6e6ff;
-    color: #0b1630;
+        background: linear-gradient(135deg, var(--dms-bg-start) 0%, var(--dms-bg-end) 100%);
+        color: var(--dms-text-body);
 }
 
 #app {
     min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+        font: inherit;
+}
+
+:is(
+    .login-container,
+    .signup-container,
+    .dashboard-container,
+    .profile-container,
+    .order-history-container,
+    .listings-container,
+    .create-mail-container,
+    .templates-container,
+    .house-map-container,
+    .house-map-view,
+    .map-page
+) {
+        background: linear-gradient(135deg, var(--dms-bg-start) 0%, var(--dms-bg-end) 100%) !important;
+        color: var(--dms-text-body);
+}
+
+:is(
+    .login-box,
+    .signup-box,
+    .dashboard-card,
+    .profile-card,
+    .listings-card,
+    .templates-card,
+    .create-mail-box,
+    .create-mail-wrapper,
+    .preview-box,
+    .order-section,
+    .modal-card
+) {
+        background: linear-gradient(180deg, var(--dms-surface-start) 0%, var(--dms-surface-end) 100%) !important;
+        border: 1px solid var(--dms-border) !important;
+        color: var(--dms-text-primary) !important;
+        box-shadow: 0 18px 36px rgba(11, 22, 48, 0.35), 0 0 1px rgba(61, 90, 255, 0.45) !important;
+}
+
+:is(
+    .login-box,
+    .signup-box,
+    .dashboard-card,
+    .profile-card,
+    .listings-card,
+    .templates-card,
+    .create-mail-box,
+    .preview-box,
+    .order-section,
+    .modal-card
+) :is(h1, h2, h3, h4) {
+        color: var(--dms-text-primary) !important;
+}
+
+:is(
+    .login-box,
+    .signup-box,
+    .dashboard-card,
+    .profile-card,
+    .listings-card,
+    .templates-card,
+    .create-mail-box,
+    .preview-box,
+    .order-section,
+    .modal-card
+) :is(label, p, small, .helper-text, .tile-subtitle, .about-text, .card-description) {
+        color: var(--dms-text-muted) !important;
+}
+
+:is(
+    .login-box,
+    .signup-box,
+    .dashboard-card,
+    .profile-card,
+    .listings-card,
+    .templates-card,
+    .create-mail-box,
+    .modal-card,
+    .order-section
+) :is(input, select, textarea) {
+        background: var(--dms-input-bg) !important;
+        color: var(--dms-text-primary) !important;
+        border: 1.5px solid var(--dms-border-soft) !important;
+}
+
+:is(
+    .login-box,
+    .signup-box,
+    .dashboard-card,
+    .profile-card,
+    .listings-card,
+    .templates-card,
+    .create-mail-box,
+    .modal-card,
+    .order-section
+) :is(input, select, textarea):focus {
+        outline: none;
+        background: var(--dms-input-bg-focus) !important;
+        border-color: var(--dms-primary-start) !important;
+        box-shadow: 0 0 0 3px var(--dms-focus-ring) !important;
+}
+
+:is(
+    .login-button,
+    .primary-button,
+    .action-button,
+    .submit-button,
+    .action-tile.primary-tile,
+    .save-button,
+    .create-button
+) {
+        background: linear-gradient(135deg, var(--dms-primary-start), var(--dms-primary-end)) !important;
+        color: var(--dms-text-primary) !important;
+        border: 1px solid rgba(82, 129, 255, 0.7) !important;
+}
+
+:is(
+    .home-button,
+    .signout-button,
+    .outline-button,
+    .link-button,
+    .secondary-button,
+    .cancel-button
+) {
+        color: var(--dms-text-muted) !important;
+        border-color: var(--dms-border-soft) !important;
+}
+
+a {
+        color: var(--dms-primary-start);
 }

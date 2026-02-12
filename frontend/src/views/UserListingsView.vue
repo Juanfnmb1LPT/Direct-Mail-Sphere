@@ -1,9 +1,5 @@
 <template>
   <div class="listings-container">
-    <button type="button" class="back-button" @click="goToDashboard">
-      Back to dashboard
-    </button>
-
     <div class="listings-card">
       <div class="listings-header">
         <h2>User Listings</h2>
@@ -218,9 +214,6 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 const STORAGE_KEY = 'direct-mail-listings'
 
 const listings = ref([])
@@ -383,10 +376,6 @@ const formatListingLabel = (listing) => {
   return [address, city, state, zip].filter(Boolean).join(', ')
 }
 
-const goToDashboard = () => {
-  router.push('/dashboard')
-}
-
 onMounted(() => {
   loadListings()
 })
@@ -401,27 +390,6 @@ onMounted(() => {
   background: #d6e6ff;
   padding: 24px;
   position: relative;
-}
-
-.back-button {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(82, 129, 255, 0.45);
-  background: rgba(11, 26, 56, 0.7);
-  color: #c9d8ff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  border-color: #5281ff;
-  color: #ffffff;
-  background: rgba(11, 26, 56, 0.9);
 }
 
 .listings-card {
