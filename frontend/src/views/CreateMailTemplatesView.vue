@@ -38,14 +38,14 @@ const selectedTemplate = ref('')
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean', image: new URL('../assets/spring_clean.png', import.meta.url).href },
   { id: 'template-2', name: 'Template 2- Listing Coming Soon', image: new URL('../assets/coming_soon_card.png', import.meta.url).href },
-  { id: 'template-3', name: 'Template 3 - Just Sold', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-4', name: 'Template 4 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-5', name: 'Template 5 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-6', name: 'Template 6 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-7', name: 'Template 7 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-8', name: 'Template 8 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-9', name: 'Template 9 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-10', name: 'Template 10 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href }
+  { id: 'template-3', name: 'Template 3 - Just Sold', image: new URL('../assets/template-3-just-sold.png', import.meta.url).href },
+  { id: 'template-4', name: 'Template 4 - For Sale', image: new URL('../assets/template-4-for-sale.png', import.meta.url).href },
+  { id: 'template-5', name: 'Template 5 - Open House', image: new URL('../assets/template-5-open-house.png', import.meta.url).href },
+  { id: 'template-6', name: 'Template 6 - Mult Listings Postcard', image: new URL('../assets/template-6-mult-listings-postcard.png', import.meta.url).href },
+  { id: 'template-7', name: 'Template 7 - Review', image: new URL('../assets/template-7-review.png', import.meta.url).href },
+  { id: 'template-8', name: "Template 8 - What's your home worth", image: new URL("../assets/template-8-what's-your-home-worth.png", import.meta.url).href },
+  { id: 'template-9', name: 'Template 9 - Neighborhood Market Update', image: new URL('../assets/template-9-neighborhood-market-update.png', import.meta.url).href },
+  { id: 'template-10', name: 'Template 10 - Local Biz', image: new URL('../assets/template-10-local-biz.png', import.meta.url).href }
 ]
 
 const goToForm = () => {
