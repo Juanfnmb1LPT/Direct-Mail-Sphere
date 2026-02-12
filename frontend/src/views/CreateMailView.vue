@@ -527,14 +527,14 @@ const buildTemplateThreeFields = (listingOptions) => [
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean Your Finances', fields: templateOneFields, image: new URL('../assets/spring_clean.png', import.meta.url).href, backImage: new URL('../assets/spring_clean_back.png', import.meta.url).href },
   { id: 'template-2', name: 'Template 2- Listing Coming Soon', fields: defaultFields, image: new URL('../assets/coming_soon_card.png', import.meta.url).href, backImage: new URL('../assets/coming_soon_card_back.png', import.meta.url).href },
-  { id: 'template-3', name: 'Template 3 - Just Sold', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-4', name: 'Template 4 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-5', name: 'Template 5 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-6', name: 'Template 6 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-7', name: 'Template 7 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-8', name: 'Template 8 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-9', name: 'Template 9 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
-  { id: 'template-10', name: 'Template 10 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href }
+  { id: 'template-3', name: 'Template 3 - Just Sold', fields: defaultFields, image: new URL('../assets/template-3-just-sold.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-4', name: 'Template 4 - For Sale', fields: defaultFields, image: new URL('../assets/template-4-for-sale.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-5', name: 'Template 5 - Open House', fields: defaultFields, image: new URL('../assets/template-5-open-house.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-6', name: 'Template 6 - Mult Listings Postcard', fields: defaultFields, image: new URL('../assets/template-6-mult-listings-postcard.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-7', name: 'Template 7 - Review', fields: defaultFields, image: new URL('../assets/template-7-review.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-8', name: "Template 8 - What's your home worth", fields: defaultFields, image: new URL("../assets/template-8-what's-your-home-worth.png", import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-9', name: 'Template 9 - Neighborhood Market Update', fields: defaultFields, image: new URL('../assets/template-9-neighborhood-market-update.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-10', name: 'Template 10 - Local Biz', fields: defaultFields, image: new URL('../assets/template-10-local-biz.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href }
 ]
 
 const templateFromRoute = computed(() => String(route.query.template || ''))
