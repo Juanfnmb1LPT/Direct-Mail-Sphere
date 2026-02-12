@@ -1,8 +1,5 @@
 <template>
   <div class="templates-container">
-    <button type="button" class="back-button" @click="goToDashboard">
-      Back to dashboard
-    </button>
     <div class="templates-card">
       <h2>Select a Template</h2>
       <p class="templates-subtitle">Choose one of the 10 layouts to start your mailer.</p>
@@ -54,10 +51,6 @@ const templates = [
 const goToForm = () => {
   router.push({ path: '/create-mail/form', query: { template: selectedTemplate.value } })
 }
-
-const goToDashboard = () => {
-  router.push('/dashboard')
-}
 </script>
 
 <style scoped>
@@ -70,27 +63,6 @@ const goToDashboard = () => {
   width: 100%;
   padding: 24px;
   position: relative;
-}
-
-.back-button {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(82, 129, 255, 0.45);
-  background: rgba(11, 26, 56, 0.7);
-  color: #c9d8ff;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  border-color: #5281ff;
-  color: #ffffff;
-  background: rgba(11, 26, 56, 0.9);
 }
 
 .templates-card {

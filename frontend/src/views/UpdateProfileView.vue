@@ -1,9 +1,6 @@
 <template>
   <div class="profile-container">
     <div class="profile-card">
-      <button class="back-button" type="button" @click="goToDashboard">
-        Back to dashboard
-      </button>
       <h2>Update Profile</h2>
       <form @submit.prevent="saveProfile">
         <div class="two-column">
@@ -104,10 +101,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { profileService } from '../services/profileService'
-
-const router = useRouter()
 
 const firstName = ref('')
 const lastName = ref('')
@@ -201,10 +195,6 @@ const saveProfile = async () => {
   }
 }
 
-const goToDashboard = () => {
-  router.push('/dashboard')
-}
-
 const normalizeUrlField = (fieldKey) => {
   const value = String({ agentPhoto, companyLogo }[fieldKey]?.value || '').trim()
   if (!value) return
@@ -249,27 +239,6 @@ onMounted(() => {
   padding: clamp(2rem, 4vw, 3rem);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
   position: relative;
-}
-
-.back-button {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(82, 129, 255, 0.45);
-  background: rgba(11, 26, 56, 0.7);
-  color: #c9d8ff;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.back-button:hover {
-  border-color: #5281ff;
-  color: #ffffff;
-  background: rgba(11, 26, 56, 0.9);
 }
 
 .profile-card h2 {
