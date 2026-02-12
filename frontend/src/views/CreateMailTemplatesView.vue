@@ -41,7 +41,7 @@ const selectedTemplate = ref('')
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean', image: new URL('../assets/spring_clean.png', import.meta.url).href },
   { id: 'template-2', name: 'Template 2- Listing Coming Soon', image: new URL('../assets/coming_soon_card.png', import.meta.url).href },
-  { id: 'template-3', name: 'Template 3 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-3', name: 'Template 3 - Just Sold', image: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-4', name: 'Template 4 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-5', name: 'Template 5 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-6', name: 'Template 6 - TODO', image: new URL('../assets/placeholder.png', import.meta.url).href },
