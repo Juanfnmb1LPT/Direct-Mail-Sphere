@@ -186,6 +186,9 @@
         </button>
       </form>
 
+      <button type="button" class="link-button" @click="goToHome">
+        Home
+      </button>
       <button type="button" class="link-button" @click="goToLogin">
         Back to login
       </button>
@@ -315,6 +318,10 @@ const handleSignup = () => {
 
 const goToLogin = () => {
   router.push('/login')
+}
+
+const goToHome = () => {
+  router.push('/')
 }
 </script>
 
