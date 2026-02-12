@@ -1,9 +1,14 @@
 <template>
   <div class="dashboard-container">
     <div class="dashboard-card">
-      <button class="signout-button" type="button" @click="signOut">
-        Sign out
-      </button>
+      <div class="top-buttons">
+        <button class="home-button" type="button" @click="goToHome" title="Back to home">
+          ← Home
+        </button>
+        <button class="signout-button" type="button" @click="signOut">
+          Sign out
+        </button>
+      </div>
       <h2>User Dashboard</h2>
       <div class="dashboard-actions">
         <button class="action-tile primary-tile" type="button" @click="createMail">
@@ -44,7 +49,12 @@ const goToMapTest = () => {
   router.push('/map-test')
 }
 
+const goToHome = () => {
+  router.push('/')
+}
+
 const signOut = () => {
+  localStorage.removeItem('direct-mail-profile')
   router.push('/login')
 }
 
@@ -79,10 +89,20 @@ const goToOrderHistory = () => {
   position: relative;
 }
 
-.signout-button {
+.top-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 20px;
   position: absolute;
   top: 16px;
+  left: 16px;
   right: 16px;
+  width: calc(100% - 32px);
+}
+
+.home-button,
+.signout-button {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(82, 129, 255, 0.45);
@@ -94,6 +114,7 @@ const goToOrderHistory = () => {
   transition: all 0.2s ease;
 }
 
+.home-button:hover,
 .signout-button:hover {
   border-color: #5281ff;
   color: #ffffff;
@@ -101,7 +122,7 @@ const goToOrderHistory = () => {
 }
 
 .dashboard-card h2 {
-  margin: 0 0 24px;
+  margin: 36px 0 24px;
   color: #ffffff;
   font-size: 1.7rem;
   font-weight: 700;

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import LandingPageView from '../views/LandingPageView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import DashboardView from '../views/DashboardView.vue'
@@ -9,7 +10,7 @@ import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 
 const routes = [
-    { path: '/', redirect: '/login' },
+    { path: '/', name: 'home', component: LandingPageView },
     { path: '/login', name: 'login', component: LoginView },
     { path: '/signup', name: 'signup', component: SignupView },
     { path: '/dashboard', name: 'dashboard', component: DashboardView },

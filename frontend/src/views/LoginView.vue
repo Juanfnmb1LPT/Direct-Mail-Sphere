@@ -80,6 +80,9 @@
         <button type="button" class="outline-button" @click="goToSignup">
           Sign up
         </button>
+        <button type="button" class="link-button" @click="goToHome">
+          Home
+        </button>
       </div>
 
       <div class="demo-credentials">
@@ -168,6 +171,10 @@ const sendResetEmail = () => {
 
 const goToSignup = () => {
   router.push('/signup')
+}
+
+const goToHome = () => {
+  router.push('/')
 }
 </script>
 
