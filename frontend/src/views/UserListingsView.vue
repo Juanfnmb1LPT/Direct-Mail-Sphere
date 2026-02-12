@@ -10,127 +10,31 @@
         <p class="subtitle">Add, edit, or remove your active listings.</p>
       </div>
 
-      <form class="listing-form" @submit.prevent="handleSubmit">
-        <div class="form-grid">
-          <div class="form-group span-2">
-            <label for="address">Address</label>
-            <input
-              id="address"
-              v-model.trim="form.address"
-              type="text"
-              placeholder="123 Main St, City, ST 00000"
-              autocomplete="street-address"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="beds">Num Beds</label>
-            <input
-              id="beds"
-              v-model.number="form.beds"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="3"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="baths">Num Baths</label>
-            <input
-              id="baths"
-              v-model.number="form.baths"
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder="2.5"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="sqft">Square Footage</label>
-            <input
-              id="sqft"
-              v-model.number="form.sqft"
-              type="number"
-              min="1"
-              step="1"
-              placeholder="1850"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="price">Price</label>
-            <input
-              id="price"
-              v-model.number="form.price"
-              type="number"
-              min="1"
-              step="1"
-              placeholder="425000"
-              required
-            />
-          </div>
-
-          <div class="form-group span-2">
-            <label for="img1">Img 1</label>
-            <input
-              id="img1"
-              v-model.trim="form.img1"
-              type="url"
-              placeholder="https://example.com/photo-1.jpg"
-              autocomplete="url"
-              required
-            />
-          </div>
-
-          <div class="form-group span-2">
-            <label for="img2">Img 2</label>
-            <input
-              id="img2"
-              v-model.trim="form.img2"
-              type="url"
-              placeholder="https://example.com/photo-2.jpg"
-              autocomplete="url"
-            />
-          </div>
-
-          <div class="form-group span-2">
-            <label for="img3">Img 3</label>
-            <input
-              id="img3"
-              v-model.trim="form.img3"
-              type="url"
-              placeholder="https://example.com/photo-3.jpg"
-              autocomplete="url"
-            />
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="submit" class="primary-button">
-            {{ editingId ? 'Update listing' : 'Add listing' }}
-          </button>
-          <button
-            v-if="editingId"
-            type="button"
-            class="ghost-button"
-            @click="resetForm"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
+      <div class="listings-toolbar">
+        <input
+          v-if="listings.length"
+          v-model.trim="searchQuery"
+          type="text"
+          class="search-input"
+          placeholder="Search by address"
+          aria-label="Search listings"
+        />
+        <button type="button" class="primary-button" @click="openCreate">
+          Add new listing
+        </button>
+      </div>
 
       <div class="listings-list">
         <div v-if="listings.length === 0" class="empty-state">
-          No listings yet. Add one above.
+          <p>No listings yet.</p>
+          <button type="button" class="primary-button" @click="openCreate">
+            Add your first listing
+          </button>
         </div>
-        <div v-for="listing in listings" :key="listing.id" class="listing-card">
+        <div v-else-if="filteredListings.length === 0" class="empty-state">
+          No listings match your search.
+        </div>
+        <div v-for="listing in filteredListings" :key="listing.id" class="listing-card">
           <div class="listing-info">
             <h3>{{ listing.address }}</h3>
             <p>
@@ -154,11 +58,130 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showModal" class="modal-backdrop" @click="closeModal">
+      <div class="modal-card" @click.stop>
+        <h3>{{ editingId ? 'Edit listing' : 'Add listing' }}</h3>
+        <form class="listing-form" @submit.prevent="handleSubmit">
+          <div class="form-grid">
+            <div class="form-group span-2">
+              <label for="address">Address</label>
+              <input
+                id="address"
+                v-model.trim="form.address"
+                type="text"
+                placeholder="123 Main St, City, ST 00000"
+                autocomplete="street-address"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="beds">Num Beds</label>
+              <input
+                id="beds"
+                v-model.number="form.beds"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="3"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="baths">Num Baths</label>
+              <input
+                id="baths"
+                v-model.number="form.baths"
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="2.5"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="sqft">Square Footage</label>
+              <input
+                id="sqft"
+                v-model.trim="form.sqft"
+                type="text"
+                inputmode="numeric"
+                placeholder="1,850"
+                required
+                @blur="formatNumberField('sqft')"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="price">Price</label>
+              <input
+                id="price"
+                v-model.trim="form.price"
+                type="text"
+                inputmode="numeric"
+                placeholder="425,000"
+                required
+                @blur="formatNumberField('price')"
+              />
+            </div>
+
+            <div class="form-group span-2">
+              <label for="img1">Img 1</label>
+              <input
+                id="img1"
+                v-model.trim="form.img1"
+                type="url"
+                placeholder="https://www.example.com/photo-1.jpg"
+                autocomplete="url"
+                required
+                @blur="normalizeUrlField('img1')"
+              />
+            </div>
+
+            <div class="form-group span-2">
+              <label for="img2">Img 2</label>
+              <input
+                id="img2"
+                v-model.trim="form.img2"
+                type="url"
+                placeholder="https://www.example.com/photo-2.jpg"
+                autocomplete="url"
+                @blur="normalizeUrlField('img2')"
+              />
+            </div>
+
+            <div class="form-group span-2">
+              <label for="img3">Img 3</label>
+              <input
+                id="img3"
+                v-model.trim="form.img3"
+                type="url"
+                placeholder="https://www.example.com/photo-3.jpg"
+                autocomplete="url"
+                @blur="normalizeUrlField('img3')"
+              />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-button">
+              {{ editingId ? 'Update listing' : 'Add listing' }}
+            </button>
+            <button type="button" class="ghost-button" @click="closeModal">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -166,6 +189,8 @@ const STORAGE_KEY = 'direct-mail-listings'
 
 const listings = ref([])
 const editingId = ref('')
+const showModal = ref(false)
+const searchQuery = ref('')
 
 const emptyForm = () => ({
   address: '',
@@ -179,6 +204,14 @@ const emptyForm = () => ({
 })
 
 const form = ref(emptyForm())
+
+const filteredListings = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim()
+  if (!query) return listings.value
+  return listings.value.filter((listing) =>
+    String(listing.address || '').toLowerCase().includes(query)
+  )
+})
 
 const loadListings = () => {
   try {
@@ -198,14 +231,24 @@ const resetForm = () => {
   editingId.value = ''
 }
 
+const openCreate = () => {
+  resetForm()
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  resetForm()
+}
+
 const handleSubmit = () => {
   const payload = {
     id: editingId.value || `listing-${Date.now()}`,
     address: form.value.address,
     beds: Number(form.value.beds),
     baths: Number(form.value.baths),
-    sqft: Number(form.value.sqft),
-    price: Number(form.value.price),
+    sqft: parseNumeric(form.value.sqft),
+    price: parseNumeric(form.value.price),
     img1: form.value.img1,
     img2: form.value.img2,
     img3: form.value.img3
@@ -220,7 +263,7 @@ const handleSubmit = () => {
   }
 
   saveListings()
-  resetForm()
+  closeModal()
 }
 
 const startEdit = (listing) => {
@@ -229,18 +272,58 @@ const startEdit = (listing) => {
     address: listing.address,
     beds: listing.beds,
     baths: listing.baths,
-    sqft: listing.sqft,
-    price: listing.price,
+    sqft: formatNumberForInput(listing.sqft),
+    price: formatNumberForInput(listing.price),
     img1: listing.img1,
     img2: listing.img2 || '',
     img3: listing.img3 || ''
   }
+  showModal.value = true
+}
+
+const formatNumberForInput = (value) => {
+  const numeric = Number(String(value || '').replace(/[^0-9]/g, ''))
+  if (!numeric) return ''
+  return numeric.toLocaleString('en-US')
+}
+
+const formatNumberField = (fieldId) => {
+  const raw = String(form.value[fieldId] || '')
+  const digits = raw.replace(/[^0-9]/g, '')
+  if (!digits) {
+    form.value[fieldId] = ''
+    return
+  }
+  form.value[fieldId] = Number(digits).toLocaleString('en-US')
+}
+
+const parseNumeric = (value) => {
+  const digits = String(value || '').replace(/[^0-9]/g, '')
+  return digits ? Number(digits) : 0
+}
+
+const normalizeUrlField = (fieldId) => {
+  const raw = String(form.value[fieldId] || '').trim()
+  if (!raw) return
+  if (/^https?:\/\//i.test(raw)) {
+    const normalized = raw.replace(/^(https?:\/\/)(?!www\.)/i, '$1www.')
+    form.value[fieldId] = normalized
+    return
+  }
+  if (/^www\./i.test(raw)) {
+    form.value[fieldId] = `https://${raw}`
+    return
+  }
+  form.value[fieldId] = `https://www.${raw}`
 }
 
 const removeListing = (id) => {
+  const target = listings.value.find((listing) => listing.id === id)
+  const label = target?.address ? `\n${target.address}` : ''
+  if (!window.confirm(`Delete this listing?${label}`)) return
   listings.value = listings.value.filter((listing) => listing.id !== id)
   if (editingId.value === id) {
-    resetForm()
+    closeModal()
   }
   saveListings()
 }
@@ -312,18 +395,66 @@ onMounted(() => {
   margin: 0 0 24px;
 }
 
-.listing-form {
-  margin-bottom: 32px;
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 
-.form-group span-2 {
-  grid-column: 1 / -1;
+.listings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.search-input {
+  flex: 1 1 260px;
+  min-width: 220px;
+  padding: 12px 14px;
+  border: 2px solid rgba(79, 124, 255, 0.3);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background-color: rgba(11, 26, 56, 0.8);
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #5281ff;
+  background-color: rgba(11, 26, 56, 0.95);
+  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 8, 20, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 720px;
+  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
+  border: 1px solid rgba(82, 129, 255, 0.5);
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+}
+
+.modal-card h3 {
+  margin: 0 0 16px;
+  font-size: 1.35rem;
+  text-align: center;
 }
 
 .form-group {

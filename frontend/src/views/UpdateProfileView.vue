@@ -70,7 +70,8 @@
             v-model.trim="agentPhoto"
             type="url"
             autocomplete="url"
-            placeholder="https://example.com/agent.jpg"
+            placeholder="https://www.example.com/agent.jpg"
+            @blur="normalizeUrlField('agentPhoto')"
           />
         </div>
 
@@ -81,7 +82,8 @@
             v-model.trim="companyLogo"
             type="url"
             autocomplete="url"
-            placeholder="https://example.com/logo.png"
+            placeholder="https://www.example.com/logo.png"
+            @blur="normalizeUrlField('companyLogo')"
           />
         </div>
 
@@ -176,6 +178,9 @@ const saveProfile = async () => {
     return
   }
 
+  normalizeUrlField('agentPhoto')
+  normalizeUrlField('companyLogo')
+
   const result = await profileService.updateProfile({
     firstName: firstName.value,
     lastName: lastName.value,
@@ -198,6 +203,26 @@ const saveProfile = async () => {
 
 const goToDashboard = () => {
   router.push('/dashboard')
+}
+
+const normalizeUrlField = (fieldKey) => {
+  const value = String({ agentPhoto, companyLogo }[fieldKey]?.value || '').trim()
+  if (!value) return
+  if (/^https?:\/\//i.test(value)) {
+    const normalized = value.replace(/^(https?:\/\/)(?!www\.)/i, '$1www.')
+    if (fieldKey === 'agentPhoto') agentPhoto.value = normalized
+    if (fieldKey === 'companyLogo') companyLogo.value = normalized
+    return
+  }
+  if (/^www\./i.test(value)) {
+    const normalized = `https://${value}`
+    if (fieldKey === 'agentPhoto') agentPhoto.value = normalized
+    if (fieldKey === 'companyLogo') companyLogo.value = normalized
+    return
+  }
+  const normalized = `https://www.${value}`
+  if (fieldKey === 'agentPhoto') agentPhoto.value = normalized
+  if (fieldKey === 'companyLogo') companyLogo.value = normalized
 }
 
 onMounted(() => {

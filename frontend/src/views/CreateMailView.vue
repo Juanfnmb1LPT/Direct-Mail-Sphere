@@ -12,9 +12,41 @@
         </div>
         <h2>Create Mail</h2>
         <form @submit.prevent="handleSubmit">
+          <div v-if="isTemplateThree && listingImportField" class="import-block">
+            <p class="import-title">Listing import</p>
+            <div class="form-group span-2">
+              <label :for="listingImportField.id">Import info from listing</label>
+            <div class="select-search">
+              <input
+                :id="listingImportField.id"
+                v-model.trim="formData[listingImportField.id]"
+                :placeholder="listingImportField.placeholder"
+                :autocomplete="listingImportField.autocomplete"
+                @focus="onSelectFocus(listingImportField.id)"
+                @input="onSelectInput(listingImportField.id)"
+                @blur="onSelectBlur(listingImportField)"
+              />
+              <div
+                v-if="isDropdownOpen(listingImportField.id)"
+                class="select-dropdown"
+              >
+                <button
+                  v-for="option in filteredOptions(listingImportField)"
+                  :key="option.value"
+                  type="button"
+                  class="select-option"
+                  @mousedown.prevent="selectOption(listingImportField.id, option)"
+                >
+                  {{ option.label }}
+                </button>
+              </div>
+            </div>
+            </div>
+            <p class="import-hint">Choose a saved listing to auto-fill the listing details below.</p>
+          </div>
           <div class="form-grid">
           <div
-            v-for="field in formFields"
+            v-for="field in visibleFields"
             :key="field.id"
             class="form-group"
             :class="{ 'span-2': field.fullWidth }"
@@ -120,6 +152,8 @@ const formData = ref({})
 const fieldState = ref({})
 const showBack = ref(false)
 const profile = ref(null)
+const listings = ref([])
+const LISTINGS_KEY = 'direct-mail-listings'
 
 const defaultFields = [
   {
@@ -394,10 +428,134 @@ const templateTwoFields = [
   }
 ]
 
+const buildTemplateThreeFields = (listingOptions) => [
+  {
+    id: 'listing_import',
+    label: 'Import from listing',
+    type: 'select-search',
+    options: listingOptions,
+    placeholder: 'Search listings by address',
+    autocomplete: 'off',
+    required: false,
+    fullWidth: true,
+    omitFromExport: true
+  },
+  {
+    id: 'first_name',
+    label: 'First name',
+    type: 'text',
+    placeholder: 'John',
+    autocomplete: 'given-name',
+    required: true
+  },
+  {
+    id: 'last_name',
+    label: 'Last name',
+    type: 'text',
+    placeholder: 'Doe',
+    autocomplete: 'family-name',
+    required: true
+  },
+  {
+    id: 'phone',
+    label: 'Phone #',
+    type: 'tel',
+    placeholder: '(555) 123-4567',
+    autocomplete: 'tel',
+    required: true
+  },
+  {
+    id: 'email',
+    label: 'Email',
+    type: 'email',
+    placeholder: 'john@example.com',
+    autocomplete: 'email',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'mls_number',
+    label: 'MLS number',
+    type: 'text',
+    placeholder: 'MLS123456',
+    autocomplete: 'off',
+    required: true
+  },
+  {
+    id: 'agent_photo',
+    label: 'Agent photo',
+    type: 'url',
+    placeholder: 'https://www.example.com/agent.jpg',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'company_logo',
+    label: 'Company logo',
+    type: 'url',
+    placeholder: 'https://www.example.com/logo.png',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'listing_address',
+    label: 'Address',
+    type: 'text',
+    placeholder: '123 Main St, City, ST 00000',
+    autocomplete: 'street-address',
+    required: true,
+    fullWidth: true
+  },
+  {
+    id: 'listing_beds',
+    label: 'Num Beds',
+    type: 'number',
+    min: 0,
+    placeholder: '3',
+    required: true
+  },
+  {
+    id: 'listing_baths',
+    label: 'Num Baths',
+    type: 'number',
+    min: 0,
+    step: 0.5,
+    placeholder: '2.5',
+    required: true
+  },
+  {
+    id: 'listing_sqft',
+    label: 'Square Footage',
+    type: 'number',
+    min: 1,
+    placeholder: '1850',
+    required: true
+  },
+  {
+    id: 'listing_price',
+    label: 'Price',
+    type: 'number',
+    min: 1,
+    placeholder: '425000',
+    required: true
+  },
+  {
+    id: 'listing_img1',
+    label: 'Img 1',
+    type: 'url',
+    placeholder: 'https://www.example.com/photo-1.jpg',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  }
+]
+
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean Your Finances', fields: templateOneFields, image: new URL('../assets/spring_clean.png', import.meta.url).href, backImage: new URL('../assets/spring_clean_back.png', import.meta.url).href },
   { id: 'template-2', name: 'Template 2- Listing Coming Soon', fields: templateTwoFields, image: new URL('../assets/coming_soon_card.png', import.meta.url).href, backImage: new URL('../assets/coming_soon_card_back.png', import.meta.url).href },
-  { id: 'template-3', name: 'Template 3 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
+  { id: 'template-3', name: 'Template 3 - Just Sold', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-4', name: 'Template 4 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-5', name: 'Template 5 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
   { id: 'template-6', name: 'Template 6 - TODO', fields: defaultFields, image: new URL('../assets/placeholder.png', import.meta.url).href, backImage: new URL('../assets/placeholder.png', import.meta.url).href },
@@ -423,7 +581,29 @@ const selectedTemplateConfig = computed(() =>
   templates.find((template) => template.id === selectedTemplate.value)
 )
 
-const formFields = computed(() => selectedTemplateConfig.value?.fields || defaultFields)
+const listingOptions = computed(() =>
+  listings.value.map((listing) => ({
+    value: listing.id,
+    label: listing.address
+  }))
+)
+
+const formFields = computed(() => {
+  if (selectedTemplate.value === 'template-3') {
+    return buildTemplateThreeFields(listingOptions.value)
+  }
+  return selectedTemplateConfig.value?.fields || defaultFields
+})
+
+const isTemplateThree = computed(() => selectedTemplate.value === 'template-3')
+
+const listingImportField = computed(() =>
+  formFields.value.find((field) => field.id === 'listing_import')
+)
+
+const visibleFields = computed(() =>
+  formFields.value.filter((field) => field.id !== 'listing_import')
+)
 
 const fieldProfileMap = {
   first_name: 'firstName',
@@ -446,6 +626,17 @@ const applyProfileToForm = (fields) => {
       formData.value[field.id] = value
     }
   })
+}
+
+const applyListingToForm = (listingId) => {
+  const listing = listings.value.find((item) => item.id === listingId)
+  if (!listing) return
+  formData.value.listing_address = listing.address || ''
+  formData.value.listing_beds = listing.beds ?? ''
+  formData.value.listing_baths = listing.baths ?? ''
+  formData.value.listing_sqft = listing.sqft ?? ''
+  formData.value.listing_price = listing.price ?? ''
+  formData.value.listing_img1 = listing.img1 || ''
 }
 
 watch(
@@ -473,8 +664,18 @@ const loadProfile = async () => {
   }
 }
 
+const loadListings = () => {
+  try {
+    const raw = localStorage.getItem(LISTINGS_KEY)
+    listings.value = raw ? JSON.parse(raw) : []
+  } catch (error) {
+    listings.value = []
+  }
+}
+
 onMounted(() => {
   loadProfile()
+  loadListings()
 })
 
 const handleFileChange = (event, fieldId) => {
@@ -525,6 +726,9 @@ const selectOption = (fieldId, option) => {
   if (fieldState.value[fieldId]) {
     fieldState.value[fieldId].open = false
   }
+  if (fieldId === 'listing_import') {
+    applyListingToForm(option.value)
+  }
 }
 
 const getSelectSearchValue = (field) => {
@@ -541,8 +745,15 @@ const getSelectSearchValue = (field) => {
 const normalizeUrlField = (fieldId) => {
   const value = String(formData.value[fieldId] || '').trim()
   if (!value) return
-  if (/^https?:\/\//i.test(value)) return
-  formData.value[fieldId] = `https://${value}`
+  if (/^https?:\/\//i.test(value)) {
+    formData.value[fieldId] = value.replace(/^(https?:\/\/)(?!www\.)/i, '$1www.')
+    return
+  }
+  if (/^www\./i.test(value)) {
+    formData.value[fieldId] = `https://${value}`
+    return
+  }
+  formData.value[fieldId] = `https://www.${value}`
 }
 
 const isValidUrl = (value) => {
@@ -567,11 +778,13 @@ const handleSubmit = () => {
     .filter((field) => field.type === 'url')
     .forEach((field) => normalizeUrlField(field.id))
 
+  const exportFields = formFields.value.filter((field) => !field.omitFromExport)
+
   const rows = [
-    ['template', ...formFields.value.map((field) => field.id)],
+    ['template', ...exportFields.map((field) => field.id)],
     [
       selectedTemplate.value,
-      ...formFields.value.map((field) =>
+      ...exportFields.map((field) =>
         field.type === 'select-search'
           ? getSelectSearchValue(field)
           : formData.value[field.id]
@@ -787,6 +1000,28 @@ const goToTemplates = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+}
+
+.import-block {
+  margin: 0 0 18px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(82, 129, 255, 0.35);
+  background: rgba(11, 26, 56, 0.6);
+}
+
+.import-title {
+  margin: 0 0 12px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.3px;
+}
+
+.import-hint {
+  margin: 10px 0 0;
+  color: #b8c9ff;
+  font-size: 0.85rem;
 }
 
 .form-group.span-2 {
