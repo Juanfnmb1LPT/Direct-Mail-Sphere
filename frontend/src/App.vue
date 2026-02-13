@@ -52,7 +52,7 @@ const goToHome = () => {
 
 const signOut = () => {
   localStorage.removeItem('direct-mail-profile')
-  router.push('/login')
+  router.push('/')
 }
 </script>
 

@@ -1,8 +1,26 @@
 <template>
-  <div class="signup-container">
-    <div class="signup-box">
-      <h2>Create Account</h2>
-      <form @submit.prevent="handleSignup">
+  <div class="signup-page">
+    <nav class="signup-navbar">
+      <div class="signup-nav-container">
+        <div class="signup-brand">
+          <h1 class="signup-brand-title">DIRECT MAIL SPHERE</h1>
+          <div class="signup-brand-underline"></div>
+          <p class="signup-brand-subtitle">
+            Direct mail marketing with modern automation.
+          </p>
+          <p class="signup-brand-description">
+            Create an account to launch your next campaign.
+          </p>
+        </div>
+        <button type="button" class="signup-home-link" @click="goToLogin">
+          Back to login
+        </button>
+      </div>
+    </nav>
+    <div class="signup-shell">
+      <div class="signup-panel">
+        <h2 class="panel-title">Create account</h2>
+        <form @submit.prevent="handleSignup">
         <div class="two-column">
           <div class="form-group">
             <label for="first-name">First name</label>
@@ -181,17 +199,12 @@
         <div v-if="error" class="error-message">{{ error }}</div>
         <div v-if="success" class="success-message">Account created. Please log in.</div>
 
-        <button type="submit" class="primary-button" :disabled="!canSubmit">
-          Create account
-        </button>
-      </form>
+          <button type="submit" class="primary-button" :disabled="!canSubmit">
+            Create account
+          </button>
+        </form>
 
-      <button type="button" class="link-button" @click="goToHome">
-        Home
-      </button>
-      <button type="button" class="link-button" @click="goToLogin">
-        Back to login
-      </button>
+      </div>
     </div>
   </div>
 </template>
@@ -326,33 +339,131 @@ const goToHome = () => {
 </script>
 
 <style scoped>
-.signup-container {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+.signup-page {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --dms-text-muted: #0b1630;
+  --dms-border-soft: rgba(11, 22, 48, 0.35);
+}
+
+.signup-navbar {
+  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
+  border: none;
+  padding: 0;
+  box-shadow: 0 8px 24px rgba(11, 22, 48, 0.22);
+  position: relative;
+  margin: 20px 24px 0;
+  border-radius: 16px;
+  z-index: 1;
+}
+
+.signup-nav-container {
+  width: 100%;
+  margin: 0;
+  padding: 28px 32px 34px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #d6e6ff;
-  width: 100%;
-  padding: 24px;
+  min-height: 260px;
+  position: relative;
 }
 
-.signup-box {
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
-  border-radius: 14px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
-  padding: clamp(2rem, 5vw, 3rem);
+.signup-brand {
   width: 100%;
-  max-width: 520px;
-}
-
-.signup-box h2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  margin-bottom: clamp(1.5rem, 4vw, 2rem);
-  color: #ffffff;
+  gap: 8px;
+}
+
+.signup-brand-title {
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
   font-weight: 700;
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  letter-spacing: 0.3px;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.signup-brand-underline {
+  width: min(320px, 62vw);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  margin: 6px auto 0;
+}
+
+.signup-brand-subtitle {
+  margin: 8px 0 0;
+  max-width: 680px;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.4;
+}
+
+.signup-brand-description {
+  margin: 0;
+  max-width: 640px;
+  font-size: 14px;
+  color: rgba(226, 236, 255, 0.95);
+  line-height: 1.6;
+}
+
+.signup-home-link {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.signup-home-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.signup-shell {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) 0;
+  margin: 0 auto;
+}
+
+.signup-panel {
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(61, 90, 255, 0.18);
+  padding: clamp(2rem, 5vw, 3rem);
+}
+
+.panel-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f1f3d;
 }
 
 .two-column {
@@ -368,7 +479,7 @@ const goToHome = () => {
 .form-group label {
   display: block;
   margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
-  color: #b8c9ff;
+  color: #0f1f3d;
   font-weight: 600;
   font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   text-transform: uppercase;
@@ -378,20 +489,20 @@ const goToHome = () => {
 .form-group input {
   width: 100%;
   padding: clamp(10px, 2vw, 14px);
-  border: 2px solid rgba(79, 124, 255, 0.3);
+  border: 2px solid #d0d8ee;
   border-radius: 10px;
   font-size: clamp(0.9rem, 2.5vw, 0.95rem);
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  background-color: #f8f9ff;
+  color: #0f1f3d;
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #5281ff;
-  background-color: rgba(11, 26, 56, 0.95);
-  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+  border-color: #3d5aff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12);
 }
 
 .password-field {
@@ -415,12 +526,12 @@ const goToHome = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #b8c9ff;
+  color: #5b6b8f;
   transition: color 0.3s ease;
 }
 
 .toggle-password:hover {
-  color: #5281ff;
+  color: #3d5aff;
 }
 
 .toggle-password svg {
@@ -433,7 +544,7 @@ const goToHome = () => {
   gap: 8px;
   align-items: center;
   margin-top: 8px;
-  color: #b8c9ff;
+  color: #5b6b8f;
   font-size: 0.85rem;
 }
 
@@ -456,7 +567,7 @@ const goToHome = () => {
 .strength-list {
   margin: 10px 0 0;
   padding-left: 18px;
-  color: #7a8fb5;
+  color: #5b6b8f;
   font-size: 0.85rem;
   display: grid;
   gap: 6px;
@@ -472,7 +583,7 @@ const goToHome = () => {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1.5px solid rgba(184, 201, 255, 0.6);
+  border: 1.5px solid rgba(91, 107, 143, 0.6);
   background: transparent;
   display: inline-flex;
   align-items: center;
@@ -499,7 +610,7 @@ const goToHome = () => {
 
 .helper-text {
   margin-top: 8px;
-  color: #ff8a80;
+  color: #d14646;
   font-size: 0.85rem;
 }
 
@@ -530,7 +641,7 @@ const goToHome = () => {
 .primary-button {
   width: 100%;
   padding: clamp(12px, 2vw, 14px);
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  background: linear-gradient(135deg, #3d5aff 0%, #5281ff 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -556,10 +667,9 @@ const goToHome = () => {
 }
 
 .link-button {
-  margin-top: 16px;
   background: none;
   border: none;
-  color: #b8c9ff;
+  color: #0b1630;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -569,6 +679,12 @@ const goToHome = () => {
 }
 
 .link-button:hover {
-  color: #5281ff;
+  color: #0f1f3d;
+}
+
+.secondary-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-start;
 }
 </style>

@@ -1,8 +1,26 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
-      <h2>Mail Sphere Project</h2>
-      <form @submit.prevent="handleLogin">
+  <div class="login-page">
+    <nav class="login-navbar">
+      <div class="login-nav-container">
+        <div class="login-brand">
+          <h1 class="login-brand-title">DIRECT MAIL SPHERE</h1>
+          <div class="login-brand-underline"></div>
+          <p class="login-brand-subtitle">
+            Direct mail marketing with modern automation.
+          </p>
+          <p class="login-brand-description">
+            Sign in to create, manage, and launch campaigns in minutes.
+          </p>
+        </div>
+        <button type="button" class="login-home-link" @click="goToHome">
+          Home
+        </button>
+      </div>
+    </nav>
+    <div class="login-shell">
+      <div class="login-panel">
+        <h2 class="panel-title">Sign in</h2>
+        <form @submit.prevent="handleLogin">
         <div class="form-group">
           <label for="email">Email or Username:</label>
           <input
@@ -68,27 +86,35 @@
         <div v-if="loading" class="loading-message">Logging in...</div>
         <div v-if="success" class="success-message">Login successful.</div>
 
-        <button type="submit" class="login-button" :disabled="loading">
-          {{ loading ? 'Logging in...' : 'Login' }}
-        </button>
-      </form>
+          <button type="submit" class="login-button" :disabled="loading">
+            {{ loading ? 'Logging in...' : 'Sign in' }}
+          </button>
+        </form>
 
-      <div class="secondary-actions">
-        <button type="button" class="link-button" @click="openResetModal">
-          Forgot password?
-        </button>
-        <button type="button" class="outline-button" @click="goToSignup">
-          Sign up
-        </button>
-        <button type="button" class="link-button" @click="goToHome">
-          Home
-        </button>
-      </div>
+        <div class="secondary-actions">
+          <button
+            type="button"
+            class="link-button"
+            style="color: #0b1630;"
+            @click="openResetModal"
+          >
+            Forgot password?
+          </button>
+          <button
+            type="button"
+            class="outline-button"
+            style="color: #0b1630;"
+            @click="goToSignup"
+          >
+            Sign up
+          </button>
+        </div>
 
-      <div class="demo-credentials">
-        <p><strong>Test Credentials:</strong></p>
-        <p>Username: <code>test</code></p>
-        <p>Password: <code>test123</code></p>
+        <div class="demo-credentials">
+          <p><strong>Test Credentials:</strong></p>
+          <p>Username: <code>test</code></p>
+          <p>Password: <code>test123</code></p>
+        </div>
       </div>
     </div>
 
@@ -179,33 +205,131 @@ const goToHome = () => {
 </script>
 
 <style scoped>
-.login-container {
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.login-page {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --dms-text-muted: #0b1630;
+  --dms-border-soft: rgba(11, 22, 48, 0.35);
+}
+
+.login-navbar {
+  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
+  border: none;
+  padding: 0;
+  box-shadow: 0 8px 24px rgba(11, 22, 48, 0.22);
+  position: relative;
+  margin: 20px 24px 0;
+  border-radius: 16px;
+  z-index: 1;
+}
+
+.login-nav-container {
+  width: 100%;
+  margin: 0;
+  padding: 28px 32px 34px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #d6e6ff;
-  width: 100%;
+  min-height: 260px;
+  position: relative;
 }
 
-.login-box {
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
-  padding: clamp(2rem, 5vw, 3rem);
+.login-brand {
   width: 100%;
-  max-width: 400px;
-  backdrop-filter: blur(10px);
-}
-
-.login-box h2 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  margin-bottom: clamp(1.5rem, 4vw, 2rem);
-  color: #ffffff;
+  gap: 8px;
+}
+
+.login-brand-title {
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
   font-weight: 700;
-  font-size: clamp(1.5rem, 5vw, 2rem);
-  letter-spacing: 0.3px;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.login-brand-underline {
+  width: min(320px, 62vw);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  margin: 6px auto 0;
+}
+
+.login-brand-subtitle {
+  margin: 8px 0 0;
+  max-width: 680px;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.4;
+}
+
+.login-brand-description {
+  margin: 0;
+  max-width: 640px;
+  font-size: 14px;
+  color: rgba(226, 236, 255, 0.95);
+  line-height: 1.6;
+}
+
+.login-home-link {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.login-home-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.login-shell {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) 0;
+  margin: 0 auto;
+}
+
+.login-panel {
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(61, 90, 255, 0.18);
+  padding: clamp(2rem, 5vw, 3rem);
+}
+
+.panel-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f1f3d;
 }
 
 .form-group {
@@ -215,7 +339,7 @@ const goToHome = () => {
 .form-group label {
   display: block;
   margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
-  color: #b8c9ff;
+  color: #0f1f3d;
   font-weight: 600;
   font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   text-transform: uppercase;
@@ -225,24 +349,24 @@ const goToHome = () => {
 .form-group input {
   width: 100%;
   padding: clamp(10px, 2vw, 14px);
-  border: 2px solid rgba(79, 124, 255, 0.3);
+  border: 2px solid #d0d8ee;
   border-radius: 10px;
   font-size: clamp(0.9rem, 2.5vw, 0.95rem);
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  background-color: #f8f9ff;
+  color: #0f1f3d;
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
 
 .form-group input::placeholder {
-  color: #7a8fb5;
+  color: #6b7c9f;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #5281ff;
-  background-color: rgba(11, 26, 56, 0.95);
-  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+  border-color: #3d5aff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12);
 }
 
 .password-field {
@@ -266,12 +390,12 @@ const goToHome = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #b8c9ff;
+  color: #5b6b8f;
   transition: color 0.3s ease;
 }
 
 .toggle-password:hover {
-  color: #5281ff;
+  color: #3d5aff;
 }
 
 .toggle-password svg {
@@ -282,7 +406,7 @@ const goToHome = () => {
 .login-button {
   width: 100%;
   padding: clamp(12px, 2vw, 14px);
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  background: linear-gradient(135deg, #3d5aff 0%, #5281ff 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -311,12 +435,13 @@ const goToHome = () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .link-button {
   background: none;
   border: none;
-  color: #b8c9ff;
+  color: #0b1630;
   font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   font-weight: 600;
   cursor: pointer;
@@ -326,24 +451,33 @@ const goToHome = () => {
 }
 
 .link-button:hover {
-  color: #5281ff;
+  color: #0f1f3d;
 }
 
 .outline-button {
   padding: 8px 14px;
   border-radius: 10px;
-  border: 1.5px solid rgba(82, 129, 255, 0.6);
-  background: rgba(82, 129, 255, 0.08);
-  color: #c9d8ff;
+  border: 1.5px solid rgba(61, 90, 255, 0.6);
+  background: rgba(61, 90, 255, 0.08);
+  color: #0b1630;
   font-size: clamp(0.85rem, 2.5vw, 0.95rem);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
+.login-panel .secondary-actions .link-button {
+  color: #0b1630;
+}
+
+.login-panel .secondary-actions .outline-button {
+  color: #0b1630;
+  border-color: rgba(15, 31, 61, 0.35);
+}
+
 .outline-button:hover {
-  border-color: #5281ff;
-  color: #ffffff;
+  border-color: #3d5aff;
+  color: #0f1f3d;
   box-shadow: 0 8px 18px rgba(82, 129, 255, 0.25);
   transform: translateY(-1px);
 }
@@ -355,7 +489,7 @@ const goToHome = () => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(3, 8, 20, 0.7);
+  background: rgba(11, 22, 48, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,42 +500,45 @@ const goToHome = () => {
 .modal-card {
   width: 100%;
   max-width: 420px;
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid rgba(82, 129, 255, 0.5);
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  background: #ffffff !important;
+  border: 1px solid #e0e7ff !important;
+  border-radius: 16px;
+  padding: clamp(2rem, 5vw, 3rem);
+  box-shadow: 0 12px 30px rgba(61, 90, 255, 0.18) !important;
+  color: #0f1f3d !important;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .modal-card h3 {
   margin: 0;
   font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f1f3d !important;
 }
 
 .modal-card p {
   margin: 0;
-  color: #b8c9ff;
+  color: #3d4a63 !important;
   font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .modal-card input {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 2px solid rgba(79, 124, 255, 0.3);
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  border: 2px solid #d0d8ee !important;
+  background-color: #f8f9ff !important;
+  color: #0f1f3d !important;
   font-size: 0.95rem;
 }
 
 .modal-card input:focus {
   outline: none;
-  border-color: #5281ff;
-  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+  border-color: #3d5aff !important;
+  box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12) !important;
 }
 
 .modal-actions {
@@ -415,6 +552,16 @@ const goToHome = () => {
   width: auto;
   margin-top: 0;
   padding: 10px 16px;
+}
+
+.modal-actions .outline-button {
+  background: rgba(61, 90, 255, 0.08);
+  border-color: rgba(15, 31, 61, 0.35);
+}
+
+.modal-actions .outline-button:hover {
+  border-color: #3d5aff;
+  color: #0f1f3d;
 }
 
 .modal-success {
@@ -462,11 +609,11 @@ const goToHome = () => {
   padding-top: clamp(1rem, 3vw, 1.5rem);
   border-top: 1px solid rgba(61, 90, 255, 0.3);
   font-size: clamp(0.85rem, 2.5vw, 0.9rem);
-  color: #b8c9ff;
-  background: linear-gradient(135deg, rgba(82, 129, 255, 0.1), rgba(61, 90, 255, 0.05));
+  color: #3d4a63;
+  background: linear-gradient(135deg, rgba(61, 90, 255, 0.08), rgba(82, 129, 255, 0.04));
   padding: clamp(1rem, 3vw, 1.5rem);
-  border-radius: 10px;
-  border: 1px solid rgba(61, 90, 255, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(61, 90, 255, 0.18);
 }
 
 .demo-credentials p {
