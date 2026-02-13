@@ -25,8 +25,8 @@ const defaultStore = {
                 email: 'taylor.morgan@example.com',
                 phone: '555-123-4567',
                 mlsNumber: 'MLS123456',
-                agentPhoto: 'https://example.com/agent.jpg',
-                companyLogo: 'https://example.com/logo.png'
+                agentPhoto: 'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg',
+                companyLogo: ''
             }
         }
     ]

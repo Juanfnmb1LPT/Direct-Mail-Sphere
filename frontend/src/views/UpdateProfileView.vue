@@ -131,14 +131,14 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { profileService } from '../services/profileService'
+import { defaultProfileImage, normalizeProfile } from '../services/profileDefaults'
 
 const firstName = ref('')
 const lastName = ref('')
 const email = ref('')
 const phone = ref('')
 const mlsNumber = ref('')
-const defaultAgentPhotoUrl =
-  'https://www.wilsoncenter.org/sites/default/files/media/images/person/james-person-1.jpg'
+const defaultAgentPhotoUrl = defaultProfileImage
 const agentPhoto = ref(defaultAgentPhotoUrl)
 const companyLogo = ref('')
 const saving = ref(false)
@@ -179,17 +179,14 @@ watch(phone, (value) => {
 })
 
 const setProfile = (profile) => {
-  firstName.value = profile?.firstName || ''
-  lastName.value = profile?.lastName || ''
-  email.value = profile?.email || ''
-  phone.value = profile?.phone || ''
-  mlsNumber.value = profile?.mlsNumber || ''
-  const loadedAgentPhoto = String(profile?.agentPhoto || '').trim()
-  agentPhoto.value =
-    !loadedAgentPhoto || /example\.com/i.test(loadedAgentPhoto)
-      ? defaultAgentPhotoUrl
-      : loadedAgentPhoto
-  companyLogo.value = profile?.companyLogo || ''
+  const resolved = normalizeProfile(profile)
+  firstName.value = resolved.firstName || ''
+  lastName.value = resolved.lastName || ''
+  email.value = resolved.email || ''
+  phone.value = resolved.phone || ''
+  mlsNumber.value = resolved.mlsNumber || ''
+  agentPhoto.value = String(resolved.agentPhoto || '').trim() || defaultAgentPhotoUrl
+  companyLogo.value = resolved.companyLogo || ''
   savedProfile.value = {
     firstName: firstName.value,
     lastName: lastName.value,

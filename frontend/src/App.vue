@@ -99,14 +99,20 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import {
+  defaultProfileImage,
+  normalizeProfile,
+  notifyProfileUpdated,
+  PROFILE_KEY,
+  PROFILE_UPDATED_EVENT
+} from './services/profileDefaults'
 
 const route = useRoute()
 const router = useRouter()
 const isSidebarExpanded = ref(true)
 const isMobileMenuOpen = ref(false)
-const defaultProfileImage = 'https://www.wilsoncenter.org/sites/default/files/media/images/person/james-person-1.jpg'
 const profileImage = ref(defaultProfileImage)
 const profileName = ref('User')
 
@@ -139,14 +145,15 @@ const goToHome = () => {
 }
 
 const signOut = () => {
-  localStorage.removeItem('direct-mail-profile')
+  localStorage.removeItem(PROFILE_KEY)
+  notifyProfileUpdated()
   router.push('/')
 }
 
 const loadSidebarProfile = () => {
   try {
-    const rawProfile = localStorage.getItem('direct-mail-profile')
-    const profile = rawProfile ? JSON.parse(rawProfile) : null
+    const rawProfile = localStorage.getItem(PROFILE_KEY)
+    const profile = normalizeProfile(rawProfile ? JSON.parse(rawProfile) : null)
     const first = String(profile?.firstName || '').trim()
     profileName.value = first || 'User'
     profileImage.value = String(profile?.agentPhoto || '').trim() || defaultProfileImage
@@ -160,8 +167,20 @@ const handleSidebarImageError = () => {
   profileImage.value = defaultProfileImage
 }
 
+watch(
+  () => route.fullPath,
+  () => {
+    loadSidebarProfile()
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
-  loadSidebarProfile()
+  window.addEventListener(PROFILE_UPDATED_EVENT, loadSidebarProfile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener(PROFILE_UPDATED_EVENT, loadSidebarProfile)
 })
 </script>
 

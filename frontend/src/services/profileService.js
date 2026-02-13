@@ -1,5 +1,6 @@
+import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY } from './profileDefaults'
+
 const API_BASE = 'http://localhost:3001'
-const PROFILE_KEY = 'direct-mail-profile'
 
 const loadCachedProfile = () => {
     try {
@@ -12,7 +13,8 @@ const loadCachedProfile = () => {
 
 const cacheProfile = (profile) => {
     try {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile))
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(normalizeProfile(profile)))
+        notifyProfileUpdated()
     } catch (error) {
         // Ignore storage errors.
     }
@@ -26,14 +28,13 @@ export const profileService = {
                 throw new Error('Failed to load profile')
             }
             const data = await response.json()
-            if (data?.profile) {
-                cacheProfile(data.profile)
-            }
-            return data
+            const normalizedProfile = normalizeProfile(data?.profile)
+            cacheProfile(normalizedProfile)
+            return { ...data, profile: normalizedProfile }
         } catch (error) {
             const cached = loadCachedProfile()
             if (cached) {
-                return { success: true, profile: cached, fromCache: true }
+                return { success: true, profile: normalizeProfile(cached), fromCache: true }
             }
             return { success: false, message: error?.message || 'Unable to load profile' }
         }
@@ -55,9 +56,8 @@ export const profileService = {
         }
 
         const data = await response.json()
-        if (data?.profile) {
-            cacheProfile(data.profile)
-        }
-        return data
+        const normalizedProfile = normalizeProfile(data?.profile)
+        cacheProfile(normalizedProfile)
+        return { ...data, profile: normalizedProfile }
     }
 }
