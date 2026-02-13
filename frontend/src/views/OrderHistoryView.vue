@@ -1,103 +1,366 @@
 <template>
   <div class="order-history-container">
-    <div class="order-history-header">
-      <h1>Order History</h1>
-      <p class="subtitle">Track your direct mail campaigns</p>
+    <header class="order-history-header">
+      <div class="header-left">
+        <h1>Order History</h1>
+        <p class="subtitle">Track your direct mail campaigns</p>
+        <div class="filter-row">
+          <button
+            v-for="filter in filters"
+            :key="filter.value"
+            type="button"
+            :class="['filter-chip', { active: activeFilter === filter.value }]"
+            @click="activeFilter = filter.value"
+          >
+            {{ filter.label }}
+            <span class="chip-count">{{ countForFilter(filter.value) }}</span>
+          </button>
+        </div>
+        <div class="search-row">
+          <input
+            v-model.trim="searchQuery"
+            type="search"
+            class="order-search"
+            placeholder="Search by date, order number, or address"
+            autocomplete="off"
+          />
+        </div>
+      </div>
+      <button type="button" class="seed-button" @click="addRandomOrders">
+        Add 20 random orders
+      </button>
+    </header>
+
+    <div class="table-shell">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>
+              <button type="button" class="sort-button" @click="toggleSort('date')">
+                Order Date
+                <span class="sort-indicator">{{ sortIndicator('date') }}</span>
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-button" @click="toggleSort('number')">
+                Order Number
+                <span class="sort-indicator">{{ sortIndicator('number') }}</span>
+              </button>
+            </th>
+            <th>Status</th>
+            <th>
+              <button type="button" class="sort-button" @click="toggleSort('address')">
+                Address
+                <span class="sort-indicator">{{ sortIndicator('address') }}</span>
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-if="visibleOrders.length === 0">
+            <td class="empty-row" colspan="4">No orders yet.</td>
+          </tr>
+          <tr v-for="order in visibleOrders" :key="order.id">
+            <td>{{ formatDate(order) }}</td>
+            <td>#{{ order.id }}</td>
+            <td>
+              <div class="status-cell">
+                <span :class="['order-status', statusClass(order.status)]">
+                  {{ formatStatus(order.status) }}
+                </span>
+                <select
+                  v-if="canEditStatus(order)"
+                  class="status-select"
+                  :value="order.status"
+                  @change="updateStatus(order.id, $event.target.value)"
+                >
+                  <option
+                    v-for="option in statusOptions"
+                    :key="option"
+                    :value="option"
+                  >
+                    {{ formatStatus(option) }}
+                  </option>
+                </select>
+              </div>
+            </td>
+            <td class="address-cell">{{ order.address || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <div class="orders-grid">
-      <!-- Current Orders -->
-      <div class="order-section">
-        <div class="section-header">
-          <h2>Current Orders</h2>
-          <span class="order-count">{{ currentOrders.length }}</span>
-        </div>
-        <div class="order-list">
-          <div v-if="currentOrders.length === 0" class="empty-state">
-            <p>No active orders at the moment</p>
-          </div>
-          <div v-for="order in currentOrders" :key="order.id" class="order-card">
-            <div class="order-info">
-              <h3>{{ order.name }}</h3>
-              <p class="order-id">Order #{{ order.id }}</p>
-              <p class="order-date">{{ order.date }}</p>
-            </div>
-            <div class="order-status">{{ order.status }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Past Orders -->
-      <div class="order-section">
-        <div class="section-header">
-          <h2>Past Orders</h2>
-          <span class="order-count">{{ pastOrders.length }}</span>
-        </div>
-        <div class="order-list">
-          <div v-if="pastOrders.length === 0" class="empty-state">
-            <p>No completed orders yet</p>
-          </div>
-          <div v-for="order in pastOrders" :key="order.id" class="order-card">
-            <div class="order-info">
-              <h3>{{ order.name }}</h3>
-              <p class="order-id">Order #{{ order.id }}</p>
-              <p class="order-date">{{ order.date }}</p>
-            </div>
-            <div class="order-status completed">{{ order.status }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Canceled Orders -->
-      <div class="order-section">
-        <div class="section-header">
-          <h2>Canceled Orders</h2>
-          <span class="order-count">{{ canceledOrders.length }}</span>
-        </div>
-        <div class="order-list">
-          <div v-if="canceledOrders.length === 0" class="empty-state">
-            <p>No canceled orders</p>
-          </div>
-          <div v-for="order in canceledOrders" :key="order.id" class="order-card">
-            <div class="order-info">
-              <h3>{{ order.name }}</h3>
-              <p class="order-id">Order #{{ order.id }}</p>
-              <p class="order-date">{{ order.date }}</p>
-            </div>
-            <div class="order-status canceled">{{ order.status }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-// Mock data - empty for now
-const currentOrders = ref([])
-const pastOrders = ref([])
-const canceledOrders = ref([])
+const ORDERS_KEY = 'direct-mail-orders'
+
+const orders = ref([])
+const statusOptions = ['placed', 'in progress', 'issue', 'done']
+const filters = [
+  { label: 'All', value: 'all' },
+  { label: 'Placed', value: 'placed' },
+  { label: 'In progress', value: 'in progress' },
+  { label: 'Done', value: 'past' },
+  { label: 'Issue', value: 'issue' }
+]
+const activeFilter = ref('all')
+const searchQuery = ref('')
+const visibleCount = ref(20)
+const sortKey = ref('date')
+const sortDir = ref('desc')
+
+const loadOrders = () => {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(ORDERS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const saveOrders = (nextOrders) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(nextOrders))
+}
+
+const normalizeStatus = (value) => {
+  const trimmed = String(value || '').toLowerCase().trim()
+  return statusOptions.includes(trimmed) ? trimmed : 'placed'
+}
+
+const formatStatus = (value) =>
+  String(value || '')
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+
+const statusClass = (value) => normalizeStatus(value).replace(' ', '-')
+
+const formatDate = (order) => {
+  if (order.date) return order.date
+  if (!order.createdAt) return ''
+  const parsed = new Date(order.createdAt)
+  if (Number.isNaN(parsed.getTime())) return ''
+  return parsed.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+}
+
+const filteredOrders = computed(() => {
+  const filter = activeFilter.value
+  let subset = orders.value
+  if (filter === 'placed') {
+    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'placed')
+  } else if (filter === 'in progress') {
+    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'in progress')
+  } else if (filter === 'past') {
+    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'done')
+  } else if (filter === 'issue') {
+    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'issue')
+  }
+
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return subset
+
+  return subset.filter((order) => {
+    const dateText = String(formatDate(order)).toLowerCase()
+    const idText = String(order.id || '').toLowerCase()
+    const addressText = String(order.address || '').toLowerCase()
+    return (
+      dateText.includes(query) ||
+      idText.includes(query) ||
+      addressText.includes(query)
+    )
+  })
+})
+
+const sortedOrders = computed(() => {
+  const direction = sortDir.value === 'asc' ? 1 : -1
+  return [...filteredOrders.value].sort((a, b) => {
+    if (sortKey.value === 'number') {
+      return String(a.id || '').localeCompare(String(b.id || '')) * direction
+    }
+    if (sortKey.value === 'address') {
+      return String(a.address || '').localeCompare(String(b.address || '')) * direction
+    }
+    const aTime = a.createdAt
+      ? new Date(a.createdAt).getTime()
+      : Date.parse(a.date || '') || 0
+    const bTime = b.createdAt
+      ? new Date(b.createdAt).getTime()
+      : Date.parse(b.date || '') || 0
+    return (aTime - bTime) * direction
+  })
+})
+
+const visibleOrders = computed(() => sortedOrders.value.slice(0, visibleCount.value))
+
+const countForFilter = (filterValue) => {
+  if (filterValue === 'placed') {
+    return orders.value.filter((order) => normalizeStatus(order.status) === 'placed').length
+  }
+  if (filterValue === 'in progress') {
+    return orders.value.filter((order) => normalizeStatus(order.status) === 'in progress').length
+  }
+  if (filterValue === 'past') {
+    return orders.value.filter((order) => normalizeStatus(order.status) === 'done').length
+  }
+  if (filterValue === 'issue') {
+    return orders.value.filter((order) => normalizeStatus(order.status) === 'issue').length
+  }
+  return orders.value.length
+}
+
+const canEditStatus = (order) => normalizeStatus(order.status) !== 'done'
+
+const toggleSort = (key) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    return
+  }
+  sortKey.value = key
+  sortDir.value = key === 'date' ? 'desc' : 'asc'
+}
+
+const sortIndicator = (key) => {
+  if (sortKey.value !== key) return ''
+  return sortDir.value === 'asc' ? '▲' : '▼'
+}
+
+const handleScroll = () => {
+  const scrollPosition = window.scrollY + window.innerHeight
+  const pageHeight = document.documentElement.scrollHeight
+  const nearBottom = scrollPosition >= pageHeight - 120
+  if (window.scrollY <= 8 && visibleCount.value !== 20) {
+    visibleCount.value = 20
+    return
+  }
+  if (!nearBottom) return
+  if (visibleCount.value < filteredOrders.value.length) {
+    visibleCount.value = Math.min(visibleCount.value + 20, filteredOrders.value.length)
+  }
+}
+
+const addRandomOrders = () => {
+  const templates = [
+    'Template 1- Spring Clean Your Finances',
+    'Template 2- Listing Coming Soon',
+    'Template 3 - Just Sold',
+    'Template 4 - For Sale',
+    'Template 5 - Open House',
+    'Template 6 - Mult Listings Postcard',
+    'Template 7 - Review',
+    "Template 8 - What's your home worth",
+    'Template 9 - Neighborhood Market Update',
+    'Template 10 - Local Biz'
+  ]
+  const streets = ['Maple Ave', 'Cedar St', 'Oak Dr', 'Elm St', 'Pine Ln']
+  const cities = ['Austin', 'Denver', 'Phoenix', 'Raleigh', 'Tampa']
+  const states = ['TX', 'CO', 'AZ', 'NC', 'FL']
+
+  const newOrders = Array.from({ length: 20 }, () => {
+    const now = new Date()
+    const id = `ORD-${now.getTime()}-${Math.floor(Math.random() * 1000)}`
+    const status = statusOptions[Math.floor(Math.random() * statusOptions.length)]
+    const address = `${Math.floor(100 + Math.random() * 900)} ${
+      streets[Math.floor(Math.random() * streets.length)]
+    }, ${cities[Math.floor(Math.random() * cities.length)]}, ${
+      states[Math.floor(Math.random() * states.length)]
+    }`
+    const createdAt = new Date(
+      now.getTime() - Math.floor(Math.random() * 1000 * 60 * 60 * 24 * 30)
+    ).toISOString()
+
+    return {
+      id,
+      name: templates[Math.floor(Math.random() * templates.length)],
+      status,
+      address,
+      createdAt
+    }
+  })
+
+  const nextOrders = [...newOrders, ...orders.value]
+  orders.value = nextOrders
+  saveOrders(nextOrders)
+}
+
+const updateStatus = (orderId, nextStatus) => {
+  const normalized = normalizeStatus(nextStatus)
+  const nextOrders = orders.value.map((order) =>
+    order.id === orderId ? { ...order, status: normalized } : order
+  )
+  orders.value = nextOrders
+  saveOrders(nextOrders)
+}
+
+onMounted(() => {
+  orders.value = loadOrders().map((order) => ({
+    ...order,
+    status: normalizeStatus(order.status)
+  }))
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+
+watch(activeFilter, () => {
+  visibleCount.value = 20
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
+
+watch(searchQuery, () => {
+  visibleCount.value = 20
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
+
+watch([sortKey, sortDir], () => {
+  visibleCount.value = 20
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
+
+watch(filteredOrders, (value) => {
+  if (visibleCount.value > value.length) {
+    visibleCount.value = Math.max(20, value.length)
+  }
+})
 </script>
 
 <style scoped>
 .order-history-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a0e27 0%, #0f1f3d 50%, #0a1a2e 100%);
-  padding: clamp(2rem, 5vw, 3rem);
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+  padding: clamp(2rem, 5vw, 3.5rem);
   font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  color: #0f1f3d !important;
 }
 
 .order-history-header {
-  text-align: center;
-  margin-bottom: clamp(2rem, 5vw, 3rem);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: clamp(1.5rem, 4vw, 2.5rem);
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 18px;
+  padding: clamp(1.5rem, 4vw, 2.2rem);
+  box-shadow: 0 12px 30px rgba(61, 90, 255, 0.16);
 }
 
 .order-history-header h1 {
   color: #0f1f3d;
-  font-size: clamp(2rem, 6vw, 2.5rem);
+  font-size: clamp(2rem, 5vw, 2.8rem);
   font-weight: 700;
   margin: 0;
   margin-bottom: 0.5rem;
@@ -105,114 +368,172 @@ const canceledOrders = ref([])
 }
 
 .subtitle {
-  color: #3d5aff;
-  font-size: 1.1rem;
+  color: #3d4a63;
+  font-size: 1rem;
   margin: 0;
   font-weight: 500;
 }
 
-.orders-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: clamp(1.5rem, 3vw, 2.5rem);
-  margin-bottom: 2rem;
-}
-
-.order-section {
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
-  border-radius: 12px;
-  padding: clamp(1.5rem, 3vw, 2rem);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
+.header-left {
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
-.section-header {
+.filter-row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(61, 90, 255, 0.3);
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
 }
 
-.section-header h2 {
-  color: #ffffff;
-  font-size: 1.3rem;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+.search-row {
+  margin-top: 12px;
 }
 
-.order-count {
-  display: inline-block;
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 20px;
+.order-search {
+  width: min(420px, 100%);
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid #d0d8ee;
+  background: #f8f9ff;
+  color: #0f1f3d;
   font-size: 0.9rem;
   font-weight: 600;
+  transition: all 0.2s ease;
 }
 
-.order-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.order-search:focus {
+  outline: none;
+  border-color: #3d5aff;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12);
 }
 
-.empty-state {
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(61, 90, 255, 0.55);
+  background: rgba(61, 90, 255, 0.12);
+  color: #0f1f3d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+  border-color: #3d5aff;
+  background: rgba(61, 90, 255, 0.2);
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  border-color: transparent;
+  box-shadow: 0 10px 22px rgba(61, 90, 255, 0.35);
+  color: #ffffff;
+}
+
+.chip-count {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0f1f3d;
+}
+
+.table-shell {
+  background: #ffffff;
+  border: 1px solid #d6e2ff;
+  border-radius: 16px;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  box-shadow: 0 14px 34px rgba(61, 90, 255, 0.2);
+  overflow-x: auto;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.orders-table thead th {
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #3d4a63;
+  padding: 14px 16px;
+  background: #e6eeff;
+  border-bottom: 1px solid rgba(61, 90, 255, 0.35);
+}
+
+.sort-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sort-button:hover {
+  color: #1c2b58;
+}
+
+.sort-indicator {
+  font-size: 0.75rem;
+  color: #3d5aff;
+}
+
+.orders-table tbody tr {
+  transition: background 0.2s ease;
+}
+
+.orders-table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+.orders-table tbody tr:nth-child(even) {
+  background: #d2e0ff;
+}
+
+.orders-table tbody td {
+  padding: 14px 16px;
+  color: #0f1f3d;
+  font-size: 0.9rem;
+  border-bottom: 1px solid rgba(61, 90, 255, 0.15);
+}
+
+.orders-table tbody tr:hover {
+  background: rgba(61, 90, 255, 0.22);
+}
+
+.empty-row {
+  text-align: center;
+  color: #5b6b8f;
+  padding: 28px 16px;
+}
+
+.address-cell {
+  color: #3d4a63;
+}
+
+.status-cell {
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: #b8c9ff;
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.empty-state p {
-  margin: 0;
-}
-
-.order-card {
-  background: rgba(82, 129, 255, 0.08);
-  border: 1px solid rgba(82, 129, 255, 0.2);
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.order-card:hover {
-  background: rgba(82, 129, 255, 0.15);
-  border-color: rgba(82, 129, 255, 0.4);
-  transform: translateY(-2px);
-}
-
-.order-info h3 {
-  color: #ffffff;
-  font-size: 1rem;
-  margin: 0;
-  margin-bottom: 0.25rem;
-  font-weight: 600;
-}
-
-.order-id {
-  color: #9ab0ff;
-  font-size: 0.85rem;
-  margin: 0.25rem 0;
-}
-
-.order-date {
-  color: #b8c9ff;
-  font-size: 0.8rem;
-  margin: 0.25rem 0 0 0;
-  opacity: 0.8;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .order-status {
@@ -224,24 +545,70 @@ const canceledOrders = ref([])
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
-  margin-left: 1rem;
 }
 
 .order-status.completed {
   background: linear-gradient(135deg, #18a359, #0f8a40);
 }
 
-.order-status.canceled {
-  background: linear-gradient(135deg, #d74545, #a53535);
+.order-status.in-progress {
+  background: linear-gradient(135deg, #f5c26b, #e2a243);
+  color: #0b1630;
+}
+
+.order-status.issue {
+  background: linear-gradient(135deg, #ff8a80, #d14646);
+}
+
+.order-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.status-select {
+  background: #f1f5ff;
+  border: 1px solid rgba(61, 90, 255, 0.45);
+  color: #0f1f3d;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.seed-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3d5aff 0%, #5281ff 100%);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(61, 90, 255, 0.25);
+  transition: all 0.2s ease;
+}
+
+.seed-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(61, 90, 255, 0.35);
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #5281ff;
+  box-shadow: 0 0 0 2px rgba(82, 129, 255, 0.25);
 }
 
 @media (max-width: 768px) {
-  .orders-grid {
-    grid-template-columns: 1fr;
+  .order-history-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .order-history-header {
-    margin-bottom: 1.5rem;
+  .orders-table {
+    min-width: 520px;
   }
 }
 </style>

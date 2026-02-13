@@ -153,6 +153,7 @@ const showBack = ref(false)
 const profile = ref(null)
 const listings = ref([])
 const LISTINGS_KEY = 'direct-mail-listings'
+const ORDERS_KEY = 'direct-mail-orders'
 
 const defaultFields = [
   {
@@ -779,6 +780,38 @@ const shouldShowUrlHelp = (field) => {
   return (state.focused || state.touched) && !isValidUrl(formData.value[field.id])
 }
 
+const loadOrders = () => {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(ORDERS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+const saveOrders = (orders) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+}
+
+const buildOrderAddress = () => {
+  const directAddress = String(formData.value.address || '').trim()
+  if (directAddress) return directAddress
+
+  const listingAddress = String(formData.value.listing_address || '').trim()
+  const listingCity = String(formData.value.listing_city || '').trim()
+  const listingState = String(formData.value.listing_state || '').trim()
+  const listingZip = String(formData.value.listing_zip || '').trim()
+
+  const cityState = [listingCity, listingState].filter(Boolean).join(', ')
+  const cityStateZip = [cityState, listingZip].filter(Boolean).join(' ')
+  const listingFull = [listingAddress, cityStateZip].filter(Boolean).join(', ')
+
+  return listingFull
+}
+
 const handleSubmit = () => {
   formFields.value
     .filter((field) => field.type === 'url')
@@ -808,6 +841,24 @@ const handleSubmit = () => {
         .join(',')
     )
     .join('\n')
+
+  const now = new Date()
+  const newOrder = {
+    id: `ORD-${now.getTime()}`,
+    name: selectedTemplateLabel.value,
+    status: 'placed',
+    address: buildOrderAddress(),
+    createdAt: now.toISOString(),
+    date: now.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const orders = loadOrders()
+  orders.unshift(newOrder)
+  saveOrders(orders)
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
