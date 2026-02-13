@@ -1,6 +1,6 @@
 <template>
   <div class="listings-container">
-    <div class="listings-card">
+    <div class="listings-layout">
       <div class="listings-header">
         <h2>User Listings</h2>
         <p class="subtitle">Add, edit, or remove your active listings.</p>
@@ -8,7 +8,6 @@
 
       <div class="listings-toolbar">
         <input
-          v-if="listings.length"
           v-model.trim="searchQuery"
           type="text"
           class="search-input"
@@ -30,33 +29,53 @@
         <div v-else-if="filteredListings.length === 0" class="empty-state">
           No listings match your search.
         </div>
-        <div v-for="listing in filteredListings" :key="listing.id" class="listing-card">
-          <div class="listing-info">
-            <h3>{{ formatListingLabel(listing) }}</h3>
-            <p>
-              {{ listing.beds }} bd · {{ listing.baths }} ba · {{ listing.sqft }} sqft
-            </p>
-            <p class="price">${{ formatNumber(listing.price) }}</p>
-            <div class="image-row">
-              <span v-if="listing.img1" class="image-pill">Img 1</span>
-              <span v-if="listing.img2" class="image-pill">Img 2</span>
-              <span v-if="listing.img3" class="image-pill">Img 3</span>
+        <template v-else>
+          <div class="listings-grid">
+            <div v-for="listing in paginatedListings" :key="listing.id" class="listing-card">
+              <div class="listing-image-wrap">
+                <img
+                  class="listing-image"
+                  :src="listing.img1 || fallbackListingImage"
+                  :alt="listing.address || 'Listing image'"
+                />
+              </div>
+
+              <div class="listing-info">
+                <h3>{{ formatListingLabel(listing) }}</h3>
+                <p class="price">${{ formatNumber(listing.price) }}</p>
+                <p class="image-source">Image source: {{ listing.img1 || 'No image URL' }}</p>
+              </div>
+
+              <div class="listing-actions">
+                <button type="button" class="edit-button" @click="startEdit(listing)">
+                  Edit
+                </button>
+              </div>
             </div>
           </div>
-          <div class="listing-actions">
-            <button type="button" class="outline-button" @click="startEdit(listing)">
-              Edit
+
+          <div v-if="totalPages > 1" class="pagination-row">
+            <button type="button" class="outline-button" :disabled="currentPage === 1" @click="goToPreviousPage">
+              Previous
             </button>
-            <button type="button" class="danger-button" @click="removeListing(listing.id)">
-              Delete
+            <span class="page-indicator">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button type="button" class="outline-button" :disabled="currentPage === totalPages" @click="goToNextPage">
+              Next
             </button>
           </div>
-        </div>
+        </template>
       </div>
     </div>
 
-    <div v-if="showModal" class="modal-backdrop" @click="closeModal">
-      <div class="modal-card" @click.stop>
+    <div v-if="showModal" class="listings-modal-backdrop" @click="closeModal">
+      <div class="listings-modal-card" @click.stop>
+        <div v-if="editingId" class="modal-preview-wrap">
+          <img
+            class="modal-preview-image"
+            :src="form.img1 || fallbackListingImage"
+            :alt="form.address || 'Listing preview image'"
+          />
+        </div>
         <h3>{{ editingId ? 'Edit listing' : 'Add listing' }}</h3>
         <form class="listing-form" @submit.prevent="handleSubmit">
           <div class="form-grid">
@@ -213,13 +232,139 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 const STORAGE_KEY = 'direct-mail-listings'
+const SAMPLE_SEED_KEY = 'direct-mail-listings-sample-seeded-v1'
+const SAMPLE_SEED_KEY_V2 = 'direct-mail-listings-sample-seeded-v2'
+const SAMPLE_IMAGES_SEED_KEY = 'direct-mail-listings-sample-images-seeded-v1'
+const SAMPLE_IMAGES_SEED_KEY_V2 = 'direct-mail-listings-sample-images-seeded-v2'
+const ITEMS_PER_PAGE = 6
+const fallbackListingImage = new URL('../assets/placeholder.png', import.meta.url).href
+const birchUpdatedImage =
+  'https://assets.architecturaldesigns.com/cdn-cgi/image/width=3840,quality=75,format=auto,slow-connection-quality=50/plan_assets/325000035/original/290101IY_01_1693600745.jpg'
+const cedarUpdatedImage =
+  'https://hips.hearstapps.com/hmg-prod/images/imagereader-3-1550604185.jpg'
+
+const DEFAULT_LISTINGS = [
+  {
+    id: 'listing-default-1',
+    address: '1204 Willow Creek Dr',
+    city: 'Austin',
+    state: 'TX',
+    zip: '78704',
+    beds: 3,
+    baths: 2,
+    sqft: 1840,
+    price: 489000,
+    img1: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLbTGWnADS-iYHrvrCjM5BmmJ4RIDr_mx0Xg&s',
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-2',
+    address: '88 Harbor Lane',
+    city: 'Tampa',
+    state: 'FL',
+    zip: '33602',
+    beds: 4,
+    baths: 3,
+    sqft: 2360,
+    price: 625000,
+    img1: 'https://hips.hearstapps.com/hmg-prod/images/dutch-colonial-house-style-66956274903da.jpg?crop=1.00xw:0.671xh;0,0.131xh&resize=1120:*',
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-3',
+    address: '4510 Maple Ridge Ave',
+    city: 'Denver',
+    state: 'CO',
+    zip: '80211',
+    beds: 2,
+    baths: 2,
+    sqft: 1325,
+    price: 415000,
+    img1: 'https://saterdesign.com/cdn/shop/files/9024-Main-Image_1600x.jpg?v=1744743942',
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-4',
+    address: '972 Ocean View Ct',
+    city: 'San Diego',
+    state: 'CA',
+    zip: '92109',
+    beds: 5,
+    baths: 4,
+    sqft: 3120,
+    price: 1195000,
+    img1: 'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-5',
+    address: '300 Birch Hollow Rd',
+    city: 'Nashville',
+    state: 'TN',
+    zip: '37212',
+    beds: 3,
+    baths: 2.5,
+    sqft: 2015,
+    price: 559000,
+    img1: birchUpdatedImage,
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-6',
+    address: '715 Cedar Pointe Way',
+    city: 'Charlotte',
+    state: 'NC',
+    zip: '28203',
+    beds: 4,
+    baths: 3,
+    sqft: 2480,
+    price: 648000,
+    img1: cedarUpdatedImage,
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-7',
+    address: '1042 Pine Summit Rd',
+    city: 'Phoenix',
+    state: 'AZ',
+    zip: '85018',
+    beds: 3,
+    baths: 2,
+    sqft: 1760,
+    price: 534000,
+    img1: 'https://www.houseplans.net/news/wp-content/uploads/2023/07/57260-768.jpeg',
+    img2: '',
+    img3: ''
+  },
+  {
+    id: 'listing-default-8',
+    address: '261 Lakeview Terrace',
+    city: 'Orlando',
+    state: 'FL',
+    zip: '32804',
+    beds: 5,
+    baths: 4,
+    sqft: 3290,
+    price: 925000,
+    img1: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtUqEvZMIrG_qXkTjmccttegKRRx8o5sUtNQ&s',
+    img2: '',
+    img3: ''
+  }
+]
 
 const listings = ref([])
 const editingId = ref('')
 const showModal = ref(false)
 const searchQuery = ref('')
+const currentPage = ref(1)
 
 const emptyForm = () => ({
   address: '',
@@ -245,17 +390,276 @@ const filteredListings = computed(() => {
   )
 })
 
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredListings.value.length / ITEMS_PER_PAGE))
+)
+
+const paginatedListings = computed(() => {
+  const start = (currentPage.value - 1) * ITEMS_PER_PAGE
+  return filteredListings.value.slice(start, start + ITEMS_PER_PAGE)
+})
+
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+watch(filteredListings, () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
+  }
+})
+
 const loadListings = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    listings.value = raw ? JSON.parse(raw) : []
+    if (raw === null) {
+      listings.value = DEFAULT_LISTINGS.map((listing) => ({ ...listing }))
+      saveListings()
+      return
+    }
+    listings.value = JSON.parse(raw)
   } catch (error) {
-    listings.value = []
+    listings.value = DEFAULT_LISTINGS.map((listing) => ({ ...listing }))
+    saveListings()
   }
+}
+
+const applyListingMigrations = () => {
+  let hasChanges = false
+
+  const migrated = listings.value.map((listing) => {
+    const updatedListing = { ...listing }
+
+    if (/^300\s+birch\s+hollow\s+rd$/i.test(String(updatedListing.address || '').trim())) {
+      if (updatedListing.img1 !== birchUpdatedImage) {
+        updatedListing.img1 = birchUpdatedImage
+        hasChanges = true
+      }
+    }
+
+    if (/cedar\s+point(e)?/i.test(String(updatedListing.address || '').trim())) {
+      if (updatedListing.img1 !== cedarUpdatedImage) {
+        updatedListing.img1 = cedarUpdatedImage
+        hasChanges = true
+      }
+    }
+
+    if (/^907\s+windrose\s+dr$/i.test(String(updatedListing.address || '').trim())) {
+      updatedListing.address = '742 Magnolia Crest Dr'
+      hasChanges = true
+    }
+
+    return updatedListing
+  })
+
+  if (hasChanges) {
+    listings.value = migrated
+    saveListings()
+  }
+}
+
+const seedSampleListings = () => {
+  const alreadySeeded = localStorage.getItem(SAMPLE_SEED_KEY) === 'true'
+  if (alreadySeeded) return
+
+  const sampleListings = [
+    {
+      id: `listing-${Date.now()}-sample-1`,
+      address: '1204 Willow Creek Dr',
+      city: 'Austin',
+      state: 'TX',
+      zip: '78704',
+      beds: 3,
+      baths: 2,
+      sqft: 1840,
+      price: 489000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-2`,
+      address: '88 Harbor Lane',
+      city: 'Tampa',
+      state: 'FL',
+      zip: '33602',
+      beds: 4,
+      baths: 3,
+      sqft: 2360,
+      price: 625000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-3`,
+      address: '4510 Maple Ridge Ave',
+      city: 'Denver',
+      state: 'CO',
+      zip: '80211',
+      beds: 2,
+      baths: 2,
+      sqft: 1325,
+      price: 415000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-4`,
+      address: '972 Ocean View Ct',
+      city: 'San Diego',
+      state: 'CA',
+      zip: '92109',
+      beds: 5,
+      baths: 4,
+      sqft: 3120,
+      price: 1195000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-5`,
+      address: '300 Birch Hollow Rd',
+      city: 'Nashville',
+      state: 'TN',
+      zip: '37212',
+      beds: 3,
+      baths: 2.5,
+      sqft: 2015,
+      price: 559000,
+      img1: '',
+      img2: '',
+      img3: ''
+    }
+  ]
+
+  listings.value = [...sampleListings, ...listings.value]
+  saveListings()
+  localStorage.setItem(SAMPLE_SEED_KEY, 'true')
+}
+
+const seedAdditionalListings = () => {
+  const alreadySeeded = localStorage.getItem(SAMPLE_SEED_KEY_V2) === 'true'
+  if (alreadySeeded) return
+
+  const additionalListings = [
+    {
+      id: `listing-${Date.now()}-sample-6`,
+      address: '715 Cedar Pointe Way',
+      city: 'Charlotte',
+      state: 'NC',
+      zip: '28203',
+      beds: 4,
+      baths: 3,
+      sqft: 2480,
+      price: 648000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-7`,
+      address: '1042 Pine Summit Rd',
+      city: 'Phoenix',
+      state: 'AZ',
+      zip: '85018',
+      beds: 3,
+      baths: 2,
+      sqft: 1760,
+      price: 534000,
+      img1: '',
+      img2: '',
+      img3: ''
+    },
+    {
+      id: `listing-${Date.now()}-sample-8`,
+      address: '261 Lakeview Terrace',
+      city: 'Orlando',
+      state: 'FL',
+      zip: '32804',
+      beds: 5,
+      baths: 4,
+      sqft: 3290,
+      price: 925000,
+      img1: '',
+      img2: '',
+      img3: ''
+    }
+  ]
+
+  listings.value = [...additionalListings, ...listings.value]
+  saveListings()
+  localStorage.setItem(SAMPLE_SEED_KEY_V2, 'true')
+}
+
+const seedSampleImages = () => {
+  const alreadySeeded = localStorage.getItem(SAMPLE_IMAGES_SEED_KEY) === 'true'
+  if (alreadySeeded) return
+
+  const sampleImageUrls = [
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLbTGWnADS-iYHrvrCjM5BmmJ4RIDr_mx0Xg&s',
+    'https://hips.hearstapps.com/hmg-prod/images/dutch-colonial-house-style-66956274903da.jpg?crop=1.00xw:0.671xh;0,0.131xh&resize=1120:*',
+    'https://saterdesign.com/cdn/shop/files/9024-Main-Image_1600x.jpg?v=1744743942',
+    'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
+    'https://cdn.houseplansservices.com/product/g8don8g8g04bdnb7mfss65rj62/w560x373.jpg?v=2'
+  ]
+
+  let imageIndex = 0
+  listings.value = listings.value.map((listing) => {
+    if (imageIndex >= sampleImageUrls.length) return listing
+    if (String(listing.img1 || '').trim()) return listing
+
+    const updatedListing = {
+      ...listing,
+      img1: sampleImageUrls[imageIndex]
+    }
+    imageIndex += 1
+    return updatedListing
+  })
+
+  saveListings()
+  localStorage.setItem(SAMPLE_IMAGES_SEED_KEY, 'true')
+}
+
+const seedMoreSampleImages = () => {
+  const alreadySeeded = localStorage.getItem(SAMPLE_IMAGES_SEED_KEY_V2) === 'true'
+  if (alreadySeeded) return
+
+  const additionalImageUrls = [
+    'https://www.houseplans.net/news/wp-content/uploads/2023/07/57260-768.jpeg',
+    'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtUqEvZMIrG_qXkTjmccttegKRRx8o5sUtNQ&s'
+  ]
+
+  let imageIndex = 0
+  listings.value = listings.value.map((listing) => {
+    if (imageIndex >= additionalImageUrls.length) return listing
+    if (String(listing.img1 || '').trim()) return listing
+
+    const updatedListing = {
+      ...listing,
+      img1: additionalImageUrls[imageIndex]
+    }
+    imageIndex += 1
+    return updatedListing
+  })
+
+  saveListings()
+  localStorage.setItem(SAMPLE_IMAGES_SEED_KEY_V2, 'true')
 }
 
 const saveListings = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(listings.value))
+}
+
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) currentPage.value -= 1
+}
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value += 1
 }
 
 const resetForm = () => {
@@ -378,42 +782,37 @@ const formatListingLabel = (listing) => {
 
 onMounted(() => {
   loadListings()
+  applyListingMigrations()
 })
 </script>
 
 <style scoped>
 .listings-container {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: #d6e6ff;
-  padding: 24px;
-  position: relative;
+  display: block;
+  background: transparent;
+  padding: 32px;
 }
 
-.listings-card {
+.listings-layout {
   width: 100%;
-  max-width: 900px;
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
-  border-radius: 12px;
-  padding: clamp(2rem, 5vw, 3rem);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
+  max-width: 1320px;
+  margin: 0 auto;
 }
 
 .listings-header h2 {
   margin: 0 0 6px;
-  color: #ffffff;
+  color: #0b1630;
   font-size: 1.8rem;
   font-weight: 700;
-  text-align: center;
+  text-align: left;
 }
 
 .subtitle {
-  text-align: center;
-  color: #b8c9ff;
+  text-align: left;
+  color: #264173;
   margin: 0 0 24px;
+  font-weight: 600;
 }
 
 .form-grid {
@@ -427,7 +826,7 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 12px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-bottom: 24px;
 }
 
@@ -435,44 +834,65 @@ onMounted(() => {
   flex: 1 1 260px;
   min-width: 220px;
   padding: 12px 14px;
-  border: 2px solid rgba(79, 124, 255, 0.3);
+  border: 2px solid rgba(15, 31, 61, 0.2);
   border-radius: 10px;
   font-size: 0.95rem;
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  background-color: #ecf2ff;
+  color: #0b1630;
   transition: all 0.3s ease;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #5281ff;
-  background-color: rgba(11, 26, 56, 0.95);
+  background-color: #ffffff;
   box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
 }
 
-.modal-backdrop {
+.listings-modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(3, 8, 20, 0.7);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 24px;
-  z-index: 50;
+  padding: 22px 16px;
+  overflow-y: auto;
+  z-index: 2000;
 }
 
-.modal-card {
+.listings-modal-card {
   width: 100%;
-  max-width: 720px;
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid rgba(82, 129, 255, 0.5);
+  max-width: 640px;
+  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 58%, #dbe8ff 100%);
+  border: 1px solid rgba(15, 31, 61, 0.2);
   border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  padding: 18px;
+  box-shadow: 0 22px 48px rgba(11, 22, 48, 0.28);
+  color: #0b1630;
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  margin: 0 auto;
 }
 
-.modal-card h3 {
+.modal-preview-wrap {
+  width: 100%;
+  height: 170px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 31, 61, 0.16);
+  background: linear-gradient(135deg, #eef4ff 0%, #dce8ff 100%);
+  margin-bottom: 14px;
+}
+
+.modal-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.listings-modal-card h3 {
   margin: 0 0 16px;
   font-size: 1.35rem;
   text-align: center;
@@ -485,7 +905,7 @@ onMounted(() => {
 }
 
 .form-group label {
-  color: #b8c9ff;
+  color: #264173;
   font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
@@ -495,11 +915,11 @@ onMounted(() => {
 .form-group input {
   width: 100%;
   padding: 12px 14px;
-  border: 2px solid rgba(79, 124, 255, 0.3);
+  border: 2px solid rgba(15, 31, 61, 0.2);
   border-radius: 10px;
   font-size: 0.95rem;
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  background-color: #ecf2ff;
+  color: #0b1630;
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -507,7 +927,7 @@ onMounted(() => {
 .form-group input:focus {
   outline: none;
   border-color: #5281ff;
-  background-color: rgba(11, 26, 56, 0.95);
+  background-color: #ffffff;
   box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
 }
 
@@ -540,9 +960,9 @@ onMounted(() => {
 .ghost-button {
   padding: 12px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(82, 129, 255, 0.6);
-  background: rgba(82, 129, 255, 0.08);
-  color: #c9d8ff;
+  border: 1px solid rgba(15, 31, 61, 0.24);
+  background: #f3f7ff;
+  color: #264173;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -550,108 +970,146 @@ onMounted(() => {
 
 .ghost-button:hover {
   border-color: #5281ff;
-  color: #ffffff;
+  color: #0b1630;
 }
 
-.listings-list {
+.listings-grid {
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
 }
 
 .listing-card {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(82, 129, 255, 0.3);
-  background: rgba(82, 129, 255, 0.08);
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 31, 61, 0.18);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(11, 22, 48, 0.12);
+  overflow: hidden;
+}
+
+.listing-image-wrap {
+  width: 100%;
+  height: 210px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(135deg, #eef4ff 0%, #dce8ff 100%);
+}
+
+.listing-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.listing-info {
+  padding: 14px 14px 10px;
 }
 
 .listing-info h3 {
-  margin: 0 0 6px;
-  color: #ffffff;
-  font-size: 1.1rem;
-}
-
-.listing-info p {
-  margin: 0 0 6px;
-  color: #b8c9ff;
+  margin: 0 0 8px;
+  color: #0b1630;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .price {
+  margin: 0 0 8px;
   font-weight: 700;
-  color: #ffffff;
+  color: #0b1630;
 }
 
-.image-row {
-  display: flex;
-  gap: 8px;
-}
-
-.image-pill {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  background: rgba(82, 129, 255, 0.3);
-  color: #ffffff;
+.image-source {
+  margin: 0;
+  color: #3b4f72;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  word-break: break-all;
 }
 
 .listing-actions {
+  padding: 0 14px 14px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: center;
+}
+
+.edit-button {
+  width: min(170px, 100%);
+  min-width: 130px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(82, 129, 255, 0.65);
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-button:hover {
+  background: linear-gradient(135deg, #6a94ff, #5281ff);
+  transform: translateY(-1px);
 }
 
 .outline-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(82, 129, 255, 0.6);
-  background: transparent;
-  color: #c9d8ff;
-  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(82, 129, 255, 0.7);
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
+  color: #ffffff;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.outline-button:hover {
-  border-color: #5281ff;
-  color: #ffffff;
+.outline-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6a94ff, #5281ff);
+  transform: translateY(-1px);
 }
 
-.danger-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 107, 107, 0.6);
-  background: rgba(255, 107, 107, 0.1);
-  color: #ff8a80;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.danger-button:hover {
-  border-color: rgba(255, 107, 107, 0.9);
-  color: #ffffff;
-  background: rgba(255, 107, 107, 0.3);
+.outline-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .empty-state {
   text-align: center;
-  color: #b8c9ff;
+  color: #264173;
   padding: 24px;
   border-radius: 10px;
-  border: 1px dashed rgba(82, 129, 255, 0.4);
+  border: 1px dashed rgba(82, 129, 255, 0.45);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.pagination-row {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.page-indicator {
+  color: #264173;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
-  .listing-card {
-    flex-direction: column;
+  .listings-container {
+    padding: 20px;
   }
 
-  .listing-actions {
-    flex-direction: row;
-    justify-content: flex-start;
+  .listings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .listings-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

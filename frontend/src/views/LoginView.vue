@@ -214,7 +214,7 @@ const goToHome = () => {
   align-items: stretch;
   width: 100%;
   padding-bottom: clamp(2rem, 4vw, 3rem);
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
   font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --dms-text-muted: #0b1630;
   --dms-border-soft: rgba(11, 22, 48, 0.35);
@@ -309,7 +309,7 @@ const goToHome = () => {
 
 .login-shell {
   width: 100%;
-  max-width: 520px;
+  max-width: 580px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -621,7 +621,7 @@ const goToHome = () => {
 }
 
 .demo-credentials strong {
-  color: #ffffff;
+  color: #0b1630;
 }
 
 .demo-credentials code {

@@ -12,8 +12,8 @@
             Create an account to launch your next campaign.
           </p>
         </div>
-        <button type="button" class="signup-home-link" @click="goToLogin">
-          Back to login
+        <button type="button" class="signup-home-link" @click="goToHome">
+          Home
         </button>
       </div>
     </nav>
@@ -212,6 +212,12 @@
           <button type="submit" class="primary-button" :disabled="!canSubmit">
             Create account
           </button>
+
+          <div class="secondary-actions">
+            <button type="button" class="secondary-button" @click="goToLogin">
+              Already have an account?
+            </button>
+          </div>
         </form>
 
       </div>
@@ -365,7 +371,7 @@ const goToHome = () => {
   align-items: stretch;
   width: 100%;
   padding-bottom: clamp(2rem, 4vw, 3rem);
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
   font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --dms-text-muted: #0b1630;
   --dms-border-soft: rgba(11, 22, 48, 0.35);
@@ -460,7 +466,7 @@ const goToHome = () => {
 
 .signup-shell {
   width: 100%;
-  max-width: 560px;
+  max-width: 620px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -718,6 +724,25 @@ const goToHome = () => {
 .secondary-actions {
   margin-top: 16px;
   display: flex;
-  justify-content: flex-start;
+  justify-content: stretch;
+}
+
+.secondary-button {
+  width: 100%;
+  padding: clamp(12px, 2vw, 14px);
+  background: #ffffff;
+  color: #0f1f3d;
+  border: 2px solid #d0d8ee;
+  border-radius: 10px;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+}
+
+.secondary-button:hover {
+  border-color: #3d5aff;
+  background: #f8f9ff;
 }
 </style>

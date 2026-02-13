@@ -92,9 +92,9 @@
                 &#10095;
               </button>
             </div>
-            <h3 class="card-title">Future Listings Card</h3>
+            <h3 class="card-title">Future Listings Cards</h3>
             <p class="card-description">
-              A card to advertise a future listing. Get your clients alert ahead of time with beautiful coming soon notifications that build excitement and anticipation.
+              A set of cards to advertise future listings. Get your clients alert ahead of time with beautiful coming soon notifications that build excitement and anticipation.
             </p>
             <span class="card-badge">Feature</span>
           </div>
@@ -121,7 +121,7 @@
                 &#10095;
               </button>
             </div>
-            <h3 class="card-title">Home Rennovations Card</h3>
+            <h3 class="card-title">Home Renovations Cards</h3>
             <p class="card-description">
               Alert homeowners that some home renovations are tax deductible. Help your clients understand valuable tax benefits while building your brand as a trusted advisor.
             </p>
@@ -262,10 +262,9 @@ const toggleCardSide = (cardName, direction) => {
 
 .landing-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
   display: flex;
   flex-direction: column;
-  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Navigation Bar */
@@ -424,7 +423,7 @@ const toggleCardSide = (cardName, direction) => {
 /* About Platform Section */
 .about-section {
   padding: 80px 24px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #eef4ff 56%, #dce8ff 100%);
   border-top: 1px solid #e0e7ff;
   border-bottom: 1px solid #e0e7ff;
 }
@@ -509,7 +508,7 @@ const toggleCardSide = (cardName, direction) => {
 /* Expectations Section */
 .expectations-section {
   padding: 80px 24px;
-  background: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 58%, #dbe8ff 100%);
 }
 
 .expectations-container {
@@ -569,16 +568,23 @@ const toggleCardSide = (cardName, direction) => {
 }
 
 .card-badge {
-  display: inline-block;
+  display: inline-flex;
   background: #3d5aff;
   color: #ffffff;
-  padding: 6px 14px;
+  padding: 7px 14px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 24px;
+  min-width: 118px;
+  max-width: 142px;
+  white-space: normal;
+  line-height: 1.2;
+  text-align: center;
+  justify-content: center;
+  align-self: center;
+  margin: 0 auto 24px;
 }
 
 .card-image-container {
