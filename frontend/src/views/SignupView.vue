@@ -199,6 +199,16 @@
         <div v-if="error" class="error-message">{{ error }}</div>
         <div v-if="success" class="success-message">Account created. Please log in.</div>
 
+        <label class="terms-row">
+          <input
+            v-model="acceptedTerms"
+            type="checkbox"
+            name="accept-terms"
+            required
+          />
+          <span>I accept the terms and conditions.</span>
+        </label>
+
           <button type="submit" class="primary-button" :disabled="!canSubmit">
             Create account
           </button>
@@ -225,6 +235,7 @@ const error = ref('')
 const success = ref(false)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
+const acceptedTerms = ref(false)
 
 const formatFirstName = (value) =>
   value
@@ -309,7 +320,8 @@ const canSubmit = computed(() =>
     confirmPassword.value &&
     passwordsMatch.value &&
     isStrong.value &&
-    emailValid.value
+    emailValid.value &&
+    acceptedTerms.value
 )
 
 const handleSignup = () => {
@@ -323,6 +335,11 @@ const handleSignup = () => {
 
   if (!passwordsMatch.value) {
     error.value = 'Passwords do not match.'
+    return
+  }
+
+  if (!acceptedTerms.value) {
+    error.value = 'You must accept the terms and conditions.'
     return
   }
 
@@ -664,6 +681,22 @@ const goToHome = () => {
   background: linear-gradient(135deg, #6a94ff, #5281ff);
   box-shadow: 0 12px 28px rgba(82, 129, 255, 0.45);
   transform: translateY(-2px);
+}
+
+.terms-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: clamp(0.75rem, 2.5vw, 1rem) 0 0;
+  color: #0f1f3d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.terms-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #3d5aff;
 }
 
 .link-button {
