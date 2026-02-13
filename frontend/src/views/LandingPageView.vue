@@ -128,33 +128,33 @@
             <span class="card-badge">Tax Deductible</span>
           </div>
 
-          <!-- Card 3: More to Come -->
+          <!-- Card 3: Local Business -->
           <div class="feature-card">
-            <div class="card-image-container clickable" @click="openCardModal('more_to_come')">
-              <button class="nav-arrow left-arrow" @click.stop="toggleCardSide('more_to_come', 'prev')">
+            <div class="card-image-container clickable" @click="openCardModal('local_biz')">
+              <button class="nav-arrow left-arrow" @click.stop="toggleCardSide('local_biz', 'prev')">
                 &#10094;
               </button>
               <img
-                v-if="!showingBack.more_to_come"
-                src="@/assets/spring_clean.png"
-                alt="More to Come Card Front"
+                v-if="!showingBack.local_biz"
+                src="@/assets/template-10-local-biz.png"
+                alt="Local Business Card Front"
                 class="card-image"
               />
               <img
                 v-else
-                src="@/assets/spring_clean_back.png"
-                alt="More to Come Card Back"
+                src="@/assets/placeholder.png"
+                alt="Local Business Card Back"
                 class="card-image"
               />
-              <button class="nav-arrow right-arrow" @click.stop="toggleCardSide('more_to_come', 'next')">
+              <button class="nav-arrow right-arrow" @click.stop="toggleCardSide('local_biz', 'next')">
                 &#10095;
               </button>
             </div>
-            <h3 class="card-title">More to Come</h3>
+            <h3 class="card-title">Local Business Spotlight</h3>
             <p class="card-description">
-              Direct Mail Sphere is growing! We're constantly developing new card designs and marketing solutions to give you more ways to stand out and reach your market.
+              Promote trusted local businesses with a polished, neighborhood-focused card. Perfect for co-marketing partnerships and community outreach.
             </p>
-            <span class="card-badge">Growing</span>
+            <span class="card-badge">Local Partner</span>
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@ const selectedCard = ref(null)
 const showingBack = ref({
   coming_soon: false,
   spring_clean: false,
-  more_to_come: false
+  local_biz: false
 })
 
 const cardImages = {
@@ -219,9 +219,9 @@ const cardImages = {
     front: new URL('@/assets/spring_clean.png', import.meta.url).href,
     back: new URL('@/assets/spring_clean_back.png', import.meta.url).href
   },
-  more_to_come: {
-    front: new URL('@/assets/spring_clean.png', import.meta.url).href,
-    back: new URL('@/assets/spring_clean_back.png', import.meta.url).href
+  local_biz: {
+    front: new URL('@/assets/template-10-local-biz.png', import.meta.url).href,
+    back: new URL('@/assets/placeholder.png', import.meta.url).href
   }
 }
 
