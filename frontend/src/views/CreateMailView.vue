@@ -1,16 +1,13 @@
 <template>
   <div class="create-mail-container">
     <button type="button" class="back-button" @click="goToTemplates">
-      Back to templates
+      <span class="back-icon" aria-hidden="true">←</span>
+      <span>Back to templates</span>
     </button>
     <div class="create-mail-wrapper">
       <div class="create-mail-box">
-        <div class="template-strip">
-          <div class="template-row">
-            <span class="template-chip selected">{{ selectedTemplateLabel }}</span>
-          </div>
-        </div>
-        <h2>Create Mail</h2>
+        <h2>{{ selectedTemplateLabel }}</h2>
+        <p class="editor-subtitle">Dynamic card editor</p>
         <form @submit.prevent="handleSubmit">
           <div v-if="isTemplateWithListingImport && listingImportField" class="import-block">
             <p class="import-title">Listing import</p>
@@ -126,13 +123,15 @@
     <div class="preview-box">
       <div class="preview-header">
         <h3>Preview</h3>
-        <button type="button" class="flip-button" @click="showBack = !showBack">
-          {{ showBack ? 'Front' : 'Back' }}
-        </button>
       </div>
       <div class="preview-content">
         <img v-if="showBack && selectedTemplateConfig?.backImage" :src="selectedTemplateConfig.backImage" :alt="selectedTemplateLabel + ' back'" class="preview-image" />
         <img v-else-if="!showBack && selectedTemplateConfig?.image" :src="selectedTemplateConfig.image" :alt="selectedTemplateLabel" class="preview-image" />
+      </div>
+      <div class="preview-actions">
+        <button type="button" class="flip-button" @click="showBack = !showBack">
+          Flip
+        </button>
       </div>
     </div>
     </div>
@@ -828,33 +827,36 @@ const goToTemplates = () => {
 <style scoped>
 .create-mail-container {
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #d6e6ff;
+  display: block;
+  background: transparent;
   width: 100%;
-  padding: 24px;
+  padding: 32px 24px;
   position: relative;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .create-mail-wrapper {
-  display: flex;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(380px, 1fr);
+  gap: 28px;
   width: 100%;
-  max-width: 1200px;
-  align-items: flex-start;
-  justify-content: center;
+  max-width: 1320px;
+  margin: 40px auto 0;
+  align-items: start;
 }
 
 .back-button {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 20px;
+  left: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(82, 129, 255, 0.45);
-  background: rgba(159, 85, 85, 0.7);
-  color: #ffffff;
+  border: 1px solid rgba(15, 31, 61, 0.24);
+  background: #ffffff;
+  color: #0b1630;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -863,63 +865,67 @@ const goToTemplates = () => {
 
 .back-button:hover {
   border-color: #5281ff;
-  color: #ffffff;
-  background: rgba(11, 26, 56, 0.9);
+  color: #0b1630;
+  background: #f1f5ff;
+}
+
+.back-icon {
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .create-mail-box {
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
-  padding: clamp(2rem, 5vw, 3rem);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
   width: 100%;
-  max-width: 460px;
-  flex-shrink: 0;
+  max-width: none;
 }
 
 .preview-box {
-  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
-  border: 1px solid #3d5aff;
+  background: linear-gradient(135deg, #f4f8ff 0%, #dce8ff 52%, #bfd4fb 100%);
+  border: 1px solid rgba(15, 31, 61, 0.18);
   border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 1px rgba(61, 90, 255, 0.5);
-  padding: 1rem;
+  box-shadow: 0 14px 30px rgba(11, 22, 48, 0.14);
+  padding: 0.9rem;
   width: 100%;
-  max-width: 380px;
-  flex-shrink: 0;
+  max-width: none;
   display: flex;
   flex-direction: column;
+  position: static;
 }
 
 .preview-header {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 12px;
-  gap: 12px;
+  margin-bottom: 8px;
 }
 
 .preview-box h3 {
   text-align: center;
   margin: 0;
-  color: #ffffff;
+  color: #0b1630;
   font-weight: 700;
   font-size: 1.5rem;
   letter-spacing: 0.3px;
 }
 
 .flip-button {
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
   color: white;
   border: none;
   border-radius: 6px;
-  padding: 6px 12px;
+  width: min(164px, 100%);
+  padding: 9px 20px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
-  margin-left: 12px;
 }
 
 .flip-button:hover {
@@ -927,27 +933,22 @@ const goToTemplates = () => {
   transform: translateY(-1px);
 }
 
-.preview-content {
-  height: 100%;
-  min-height: 300px;
+.preview-actions {
+  margin-top: 8px;
   display: flex;
-  align-items: center;
   justify-content: center;
 }
 
-.preview-card {
-  background: rgba(82, 129, 255, 0.1);
-  border: 1px solid rgba(82, 129, 255, 0.3);
+.preview-content {
+  height: 420px;
+  min-height: 420px;
+  padding: 8px;
   border-radius: 10px;
-  padding: 20px;
-  width: 100%;
-  color: #c9d8ff;
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-.preview-card p {
-  margin-bottom: 12px;
+  border: 1px solid rgba(15, 31, 61, 0.22);
+  background: linear-gradient(135deg, #dbe8ff 0%, #afc8f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-image {
@@ -958,49 +959,28 @@ const goToTemplates = () => {
 }
 
 .create-mail-box h2 {
-  text-align: center;
+  text-align: left;
   margin-bottom: clamp(1.5rem, 4vw, 2rem);
-  color: #ffffff;
+  color: #0b1630;
   font-weight: 700;
   font-size: clamp(1.5rem, 5vw, 2rem);
   letter-spacing: 0.3px;
 }
 
-.template-strip {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-}
-
-.template-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-}
-
-.template-chip {
-  border: 1.5px solid rgba(82, 129, 255, 0.35);
-  background: rgba(11, 26, 56, 0.72);
-  color: #c9d8ff;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 0.8rem;
+.editor-subtitle {
+  margin: -18px 0 20px;
+  color: #35507f;
+  font-size: 0.95rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  letter-spacing: 0.2px;
 }
 
-.template-chip:hover {
-  border-color: #5281ff;
-  color: #ffffff;
-}
-
-.template-chip.selected {
-  border-color: #5281ff;
-  color: #ffffff;
-  background: linear-gradient(135deg, #4a78ff, #2f58d9);
-  box-shadow: 0 10px 18px rgba(82, 129, 255, 0.35);
+.selected-template-heading {
+  margin: 0 0 8px;
+  color: #264173;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .form-grid {
@@ -1013,13 +993,13 @@ const goToTemplates = () => {
   margin: 0 0 18px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid rgba(82, 129, 255, 0.35);
-  background: rgba(11, 26, 56, 0.6);
+  border: 1px solid rgba(15, 31, 61, 0.22);
+  background: linear-gradient(135deg, #edf3ff 0%, #c9d9fb 100%);
 }
 
 .import-title {
   margin: 0 0 12px;
-  color: #ffffff;
+  color: #0b1630;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: 0.3px;
@@ -1027,7 +1007,7 @@ const goToTemplates = () => {
 
 .import-hint {
   margin: 10px 0 0;
-  color: #b8c9ff;
+  color: #3b4f72;
   font-size: 0.85rem;
 }
 
@@ -1041,10 +1021,10 @@ const goToTemplates = () => {
 
 .form-group label {
   display: block;
-  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
-  color: #b8c9ff;
+  margin-bottom: 8px;
+  color: #0f1f3d;
   font-weight: 600;
-  font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+  font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1053,12 +1033,12 @@ const goToTemplates = () => {
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: clamp(10px, 2vw, 14px);
-  border: 2px solid rgba(79, 124, 255, 0.3);
+  padding: 12px 14px;
+  border: 2px solid rgba(15, 31, 61, 0.2);
   border-radius: 10px;
-  font-size: clamp(0.9rem, 2.5vw, 0.95rem);
-  background-color: rgba(11, 26, 56, 0.8);
-  color: #ffffff;
+  font-size: 0.95rem;
+  background-color: #ecf2ff;
+  color: #0b1630;
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -1068,7 +1048,7 @@ const goToTemplates = () => {
 .form-group textarea:focus {
   outline: none;
   border-color: #5281ff;
-  background-color: rgba(11, 26, 56, 0.95);
+  background-color: #ffffff;
   box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
 }
 
@@ -1087,8 +1067,8 @@ const goToTemplates = () => {
   right: 0;
   max-height: 220px;
   overflow-y: auto;
-  background: rgba(11, 26, 56, 0.98);
-  border: 1px solid rgba(82, 129, 255, 0.6);
+  background: #ffffff;
+  border: 1px solid rgba(15, 31, 61, 0.22);
   border-radius: 10px;
   padding: 6px;
   z-index: 20;
@@ -1102,7 +1082,7 @@ const goToTemplates = () => {
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #c9d8ff;
+  color: #0b1630;
   font-size: 0.9rem;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;
@@ -1111,14 +1091,14 @@ const goToTemplates = () => {
 .select-option:hover,
 .select-option:focus {
   background: rgba(82, 129, 255, 0.18);
-  color: #ffffff;
+  color: #0b1630;
   outline: none;
 }
 
 .form-group select {
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, #9ab0ff 50%),
-    linear-gradient(135deg, #9ab0ff 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, #4b6189 50%),
+    linear-gradient(135deg, #4b6189 50%, transparent 50%);
   background-position: calc(100% - 20px) calc(1em + 2px),
     calc(100% - 15px) calc(1em + 2px);
   background-size: 5px 5px, 5px 5px;
@@ -1132,24 +1112,24 @@ const goToTemplates = () => {
 
 .primary-button {
   width: 100%;
-  padding: clamp(12px, 2vw, 14px);
-  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
   color: white;
   border: none;
-  border-radius: 10px;
-  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  border-radius: 12px;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 8px 20px rgba(82, 129, 255, 0.3);
+  box-shadow: 0 8px 20px rgba(82, 129, 255, 0.28);
   letter-spacing: 0.3px;
   margin-top: clamp(0.5rem, 2vw, 1rem);
 }
 
 .primary-button:hover {
   background: linear-gradient(135deg, #6a94ff, #5281ff);
-  box-shadow: 0 12px 28px rgba(82, 129, 255, 0.45);
-  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(82, 129, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 .primary-button:active {
@@ -1178,26 +1158,25 @@ const goToTemplates = () => {
   margin-top: 8px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(24, 140, 80, 0.2);
-  color: #b8ffda;
-  border: 1px solid rgba(24, 140, 80, 0.5);
+  background: rgba(24, 140, 80, 0.12);
+  color: #1b5e3f;
+  border: 1px solid rgba(24, 140, 80, 0.35);
   font-size: 0.9rem;
 }
 
 .helper-text {
   margin-top: 8px;
   font-size: 0.85rem;
-  color: #b8c9ff;
+  color: #3b4f72;
 }
 
 @media (max-width: 1000px) {
   .create-mail-wrapper {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
   }
 
   .preview-box {
-    max-width: 460px;
+    position: static;
   }
 }
 </style>

@@ -87,8 +87,7 @@ const canceledOrders = ref([])
   min-height: 100vh;
   background: linear-gradient(135deg, #0a0e27 0%, #0f1f3d 50%, #0a1a2e 100%);
   padding: clamp(2rem, 5vw, 3rem);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell,
-    sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .order-history-header {

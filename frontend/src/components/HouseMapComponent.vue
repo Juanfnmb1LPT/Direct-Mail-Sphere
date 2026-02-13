@@ -318,8 +318,7 @@ const handleSearch = async () => {
   gap: 1rem;
   padding: 1rem;
   background-color: #f5f5f5;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
-    Cantarell, sans-serif;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .search-panel {

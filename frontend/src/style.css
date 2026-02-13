@@ -3,8 +3,9 @@
 }
 
 :root {
-        --dms-bg-start: #f5f8ff;
-        --dms-bg-end: #d6e6ff;
+        --dms-font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        --dms-bg-start: #ffffff;
+        --dms-bg-end: #cfdfff;
         --dms-surface-start: #0f1f3d;
         --dms-surface-end: #0b1630;
         --dms-border: #3d5aff;
@@ -21,8 +22,8 @@
 
 body {
     margin: 0;
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-        background: linear-gradient(135deg, var(--dms-bg-start) 0%, var(--dms-bg-end) 100%);
+        font-family: var(--dms-font-family);
+        background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
         color: var(--dms-text-body);
 }
 
@@ -44,7 +45,6 @@ textarea {
     .profile-container,
     .order-history-container,
     .listings-container,
-    .create-mail-container,
     .templates-container,
     .house-map-container,
     .house-map-view,
@@ -61,9 +61,6 @@ textarea {
     .profile-card,
     .listings-card,
     .templates-card,
-    .create-mail-box,
-    .create-mail-wrapper,
-    .preview-box,
     .order-section,
     .modal-card
 ) {
@@ -80,8 +77,6 @@ textarea {
     .profile-card,
     .listings-card,
     .templates-card,
-    .create-mail-box,
-    .preview-box,
     .order-section,
     .modal-card
 ) :is(h1, h2, h3, h4) {
@@ -95,8 +90,6 @@ textarea {
     .profile-card,
     .listings-card,
     .templates-card,
-    .create-mail-box,
-    .preview-box,
     .order-section,
     .modal-card
 ) :is(label, p, small, .helper-text, .tile-subtitle, .about-text, .card-description) {
@@ -110,7 +103,6 @@ textarea {
     .profile-card,
     .listings-card,
     .templates-card,
-    .create-mail-box,
     .modal-card,
     .order-section
 ) :is(input, select, textarea) {
@@ -126,7 +118,6 @@ textarea {
     .profile-card,
     .listings-card,
     .templates-card,
-    .create-mail-box,
     .modal-card,
     .order-section
 ) :is(input, select, textarea):focus {
