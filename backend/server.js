@@ -21,6 +21,7 @@ envPaths.forEach((envPath) => {
 const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '')
 const RESEND_API_KEY = cleanEnv(process.env.RESEND_API_KEY)
 const RESEND_FROM_EMAIL = cleanEnv(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev'
+const RESEND_LOGO_URL = cleanEnv(process.env.RESEND_LOGO_URL)
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'users.json')
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
@@ -181,11 +182,20 @@ app.post('/api/send-csv', async (req, res) => {
 
     try {
         const subjectPrefix = String(templateName || 'Direct Mail Sphere').trim()
+                const emailBodyHtml = `
+                    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; color: #0f1f3d;">
+                        ${RESEND_LOGO_URL ? `<div style="text-align:center; margin: 0 0 18px;"><img src="${RESEND_LOGO_URL}" alt="Direct Mail Sphere" style="max-width: 220px; height: auto;" /></div>` : ''}
+                        <h2 style="margin: 0 0 10px; font-size: 20px;">Your CSV export is ready</h2>
+                        <p style="margin: 0 0 12px; line-height: 1.5;">Attached is your CSV export from Direct Mail Sphere.</p>
+                        <p style="margin: 0; font-size: 13px; color: #35507f;">Template: ${subjectPrefix}</p>
+                    </div>
+                `
         const sent = await resend.emails.send({
             from: RESEND_FROM_EMAIL,
             to: [email],
             subject: `${subjectPrefix} - CSV export`,
             text: 'Attached is your CSV export from Direct Mail Sphere.',
+                        html: emailBodyHtml,
             attachments: [
                 {
                     filename: 'create-mail.csv',

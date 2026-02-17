@@ -6,6 +6,7 @@ import DashboardView from '../views/DashboardView.vue'
 import HouseMapView from '../views/HouseMapView.vue'
 import CreateMailView from '../views/CreateMailView.vue'
 import CreateMailTemplatesView from '../views/CreateMailTemplatesView.vue'
+import CreateMailPaymentView from '../views/CreateMailPaymentView.vue'
 import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
@@ -21,6 +22,7 @@ const routes = [
     { path: '/listings', name: 'listings', component: UserListingsView, meta: { title: 'User Listings' } },
     { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView, meta: { title: 'Create Mail Templates' } },
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },
+    { path: '/create-mail/payment', name: 'create-mail-payment', component: CreateMailPaymentView, meta: { title: 'Payment' } },
     { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } },
     { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView, meta: {  title: 'Nik page'} }
   

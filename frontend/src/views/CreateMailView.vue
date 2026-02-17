@@ -8,7 +8,7 @@
       <div class="create-mail-box">
         <h2>{{ selectedTemplateLabel }}</h2>
         <p class="editor-subtitle">Dynamic card editor</p>
-        <form @submit.prevent="handleSubmit">
+        <form @submit.prevent="handleSubmit" novalidate>
           <div v-if="isTemplateWithListingImport && listingImportField" class="import-block">
             <p class="import-title">Listing import</p>
             <div class="form-group span-2">
@@ -48,7 +48,10 @@
               class="expandable-section"
               :open="section.defaultOpen"
             >
-              <summary class="expandable-summary">{{ section.label }}</summary>
+              <summary class="expandable-summary">
+                <span>{{ section.label }}</span>
+                <span v-if="sectionHasErrors(section)" class="section-error-asterisk" aria-hidden="true">*</span>
+              </summary>
               <div class="form-grid section-grid">
                 <div
                   v-for="field in section.fields"
@@ -162,25 +165,17 @@
           <p v-if="showPropertiesCountError" class="properties-count-error">
             For mock purposes the max is 10.
           </p>
-
-          <label class="disable-resend-toggle">
-            <input
-              v-model="disableResend"
-              type="checkbox"
-            />
-            Disable Resend (download CSV only)
-          </label>
-        </div>
-
-        <div v-if="success" class="success-message">
-          {{ submitStatusMessage || 'Draft CSV created!' }}
         </div>
 
         <div v-if="submitError" class="error-message">
           {{ submitError }}
         </div>
 
-        <button type="submit" class="primary-button">Create mail</button>
+        <p v-if="showSubmitValidationMessage" class="submit-validation-text">
+          There are empty or incorrect fields. Please review sections marked with *.
+        </p>
+
+        <button type="submit" class="primary-button">Continue to payment</button>
       </form>
     </div>
 
@@ -220,21 +215,18 @@ import { profileService } from '../services/profileService'
 const route = useRoute()
 const router = useRouter()
 
-const success = ref(false)
 const formData = ref({})
 const fieldState = ref({})
 const propertiesToAdvertise = ref(1)
 const propertiesCountTouched = ref(false)
 const isQrPreviewOpen = ref(false)
-const disableResend = ref(false)
-const submitStatusMessage = ref('')
 const submitError = ref('')
+const hasSubmitAttempted = ref(false)
 const showBack = ref(false)
 const profile = ref(null)
 const listings = ref([])
 const LISTINGS_KEY = 'direct-mail-listings'
-const ORDERS_KEY = 'direct-mail-orders'
-const API_BASE = 'http://localhost:3001'
+const PENDING_ORDER_KEY = 'direct-mail-pending-order'
 
 const defaultFields = [
   {
@@ -832,6 +824,7 @@ watch(
       return acc
     }, {})
     applyProfileToForm(fields)
+    restorePendingFormDraft(fields)
   },
   { immediate: true }
 )
@@ -856,6 +849,7 @@ const loadListings = () => {
 onMounted(() => {
   loadProfile()
   loadListings()
+  restorePendingFormDraft()
 })
 
 const handleFileChange = (event, fieldId) => {
@@ -995,35 +989,77 @@ const showPropertiesCountError = computed(() =>
   propertiesCountTouched.value && normalizedPropertiesCount.value > 10
 )
 
-const loadOrders = () => {
-  if (typeof window === 'undefined') return []
+const isFieldInvalid = (field) => {
+  if (!field?.required) return false
+
+  const rawValue = formData.value[field.id]
+  const textValue = String(rawValue ?? '').trim()
+
+  if (!textValue) return true
+
+  if (field.type === 'url') {
+    return !isValidUrl(normalizeWebsiteValueForQr(textValue))
+  }
+
+  if (field.type === 'email') {
+    return !isValidEmail(textValue)
+  }
+
+  return false
+}
+
+const hasInvalidRequiredFields = computed(() =>
+  formFields.value.some((field) => isFieldInvalid(field))
+)
+
+const hasFormValidationErrors = computed(() =>
+  normalizedPropertiesCount.value < 1 ||
+  normalizedPropertiesCount.value > 10 ||
+  hasInvalidRequiredFields.value
+)
+
+const showSubmitValidationMessage = computed(() =>
+  hasSubmitAttempted.value && hasFormValidationErrors.value
+)
+
+const sectionHasErrors = (section) =>
+  hasSubmitAttempted.value && section.fields.some((field) => isFieldInvalid(field))
+
+const savePendingOrder = (orderPayload) => {
+  if (typeof window === 'undefined') return
+  window.sessionStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(orderPayload))
+}
+
+function loadPendingOrder() {
+  if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(ORDERS_KEY)
-    const parsed = raw ? JSON.parse(raw) : []
-    return Array.isArray(parsed) ? parsed : []
+    const raw = window.sessionStorage.getItem(PENDING_ORDER_KEY)
+    return raw ? JSON.parse(raw) : null
   } catch {
-    return []
+    return null
   }
 }
 
-const saveOrders = (orders) => {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
-}
+function restorePendingFormDraft(fields = formFields.value) {
+  const pendingOrder = loadPendingOrder()
+  if (!pendingOrder) return
 
-const sendCsvToEmail = async ({ recipientEmail, csvContent, templateName }) => {
-  const response = await fetch(`${API_BASE}/api/send-csv`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipientEmail, csvContent, templateName })
+  const pendingTemplateId = String(pendingOrder.templateId || '')
+  if (!pendingTemplateId || pendingTemplateId !== selectedTemplate.value) return
+
+  const snapshot = pendingOrder.formSnapshot
+  if (!snapshot || typeof snapshot !== 'object') return
+
+  const allowedFieldIds = new Set((fields || []).map((field) => field.id))
+  Object.entries(snapshot).forEach(([fieldId, value]) => {
+    if (!allowedFieldIds.has(fieldId)) return
+    formData.value[fieldId] = value
   })
 
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => ({}))
-    throw new Error(errorBody?.message || 'Unable to send CSV email.')
+  const pendingProperties = Number(pendingOrder.propertiesToAdvertise)
+  if (Number.isFinite(pendingProperties) && pendingProperties >= 1) {
+    propertiesToAdvertise.value = Math.floor(pendingProperties)
   }
-
-  return response.json()
 }
 
 const buildOrderAddress = () => {
@@ -1047,24 +1083,26 @@ const buildOrderAddress = () => {
 }
 
 const handleSubmit = async () => {
-  success.value = false
-  submitStatusMessage.value = ''
+  hasSubmitAttempted.value = true
   submitError.value = ''
   propertiesCountTouched.value = true
-  const totalProperties = normalizedPropertiesCount.value
-  if (totalProperties < 1 || totalProperties > 10) {
+
+  formFields.value
+    .filter((field) => field.type === 'url')
+    .forEach((field) => normalizeUrlField(field.id))
+
+  if (hasFormValidationErrors.value) {
+    submitError.value = 'Please fix the highlighted fields before continuing.'
     return
   }
+
+  const totalProperties = normalizedPropertiesCount.value
 
   const recipientEmail = String(formData.value.email || '').trim()
   if (!recipientEmail || !isValidEmail(recipientEmail)) {
     submitError.value = 'Enter a valid email in the Email field before creating mail.'
     return
   }
-
-  formFields.value
-    .filter((field) => field.type === 'url')
-    .forEach((field) => normalizeUrlField(field.id))
 
   const exportFields = formFields.value.filter((field) => !field.omitFromExport)
 
@@ -1077,65 +1115,23 @@ const handleSubmit = async () => {
     )
   ]
 
-  const rows = [
-    ['template', ...exportFields.map((field) => field.id)],
-    ...Array.from({ length: totalProperties }, () => [...exportRow])
-  ]
-
-  const csv = rows
-    .map((row) =>
-      row
-        .map((value) => {
-          const cell = value === null || value === undefined ? '' : String(value)
-          return `"${cell.replace(/"/g, '""')}"`
-        })
-        .join(',')
-    )
-    .join('\n')
-
-  const now = new Date()
-  const newOrder = {
-    id: `ORD-${now.getTime()}`,
-    name: selectedTemplateLabel.value,
-    status: 'placed',
+  const pendingOrder = {
+    templateId: selectedTemplate.value,
+    templateName: selectedTemplateLabel.value,
+    totalProperties,
+    recipientEmail,
+    propertiesToAdvertise: totalProperties,
     address: buildOrderAddress(),
-    createdAt: now.toISOString(),
-    date: now.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
+    csvHeaders: ['template', ...exportFields.map((field) => field.id)],
+    csvRow: exportRow,
+    formSnapshot: { ...formData.value },
+    prefillCardFirstName: String(formData.value.first_name || profile.value?.firstName || '').trim(),
+    prefillCardLastName: String(formData.value.last_name || profile.value?.lastName || '').trim(),
+    createdAt: new Date().toISOString()
   }
 
-  const orders = loadOrders()
-  orders.unshift(newOrder)
-  saveOrders(orders)
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'create-mail.csv'
-  link.click()
-  URL.revokeObjectURL(url)
-
-  if (disableResend.value) {
-    submitStatusMessage.value = 'Draft CSV created! Resend is disabled.'
-  } else {
-    try {
-      await sendCsvToEmail({
-        recipientEmail,
-        csvContent: csv,
-        templateName: selectedTemplateLabel.value
-      })
-      submitStatusMessage.value = `Draft CSV created and sent to ${recipientEmail}.`
-    } catch (error) {
-      submitError.value = error?.message || 'Draft CSV was created, but email sending failed.'
-      submitStatusMessage.value = 'Draft CSV created!'
-    }
-  }
-
-  success.value = true
+  savePendingOrder(pendingOrder)
+  router.push({ path: '/create-mail/payment', query: { template: selectedTemplate.value } })
 }
 
 const goToTemplates = () => {
@@ -1330,6 +1326,15 @@ const goToTemplates = () => {
   letter-spacing: 0.2px;
   user-select: none;
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-error-asterisk {
+  color: #b12626;
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .expandable-summary::-webkit-details-marker {
@@ -1541,6 +1546,13 @@ const goToTemplates = () => {
   color: #8e1c1c;
   border: 1px solid rgba(177, 38, 38, 0.35);
   font-size: 0.9rem;
+}
+
+.submit-validation-text {
+  margin: 10px 0 0;
+  color: #b12626;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .helper-text {
