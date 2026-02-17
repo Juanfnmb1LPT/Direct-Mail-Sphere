@@ -327,18 +327,18 @@ onMounted(() => {
 <style scoped>
 .payment-container {
   min-height: 100vh;
-  background: #d6e6ff;
-  padding: 28px 20px;
+  display: block;
+  background: transparent;
+  width: 100%;
+  padding: 32px 24px;
+  position: relative;
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .payment-shell {
-  max-width: 920px;
-  margin: 0 auto;
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(15, 31, 61, 0.18);
-  box-shadow: 0 16px 40px rgba(11, 22, 48, 0.18);
-  padding: 24px;
+  max-width: 760px;
+  margin: 40px auto 0;
+  padding: 0;
 }
 
 .back-button {
@@ -349,49 +349,67 @@ onMounted(() => {
   border: 1px solid rgba(15, 31, 61, 0.24);
   background: #ffffff;
   color: #0b1630;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   padding: 8px 12px;
   cursor: pointer;
   margin-bottom: 14px;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  border-color: #5281ff;
+  color: #0b1630;
+  background: #f1f5ff;
 }
 
 h1 {
   margin: 0;
   color: #0b1630;
   font-size: clamp(1.4rem, 4vw, 2rem);
+  text-align: left;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .subtitle {
-  margin-top: 8px;
-  margin-bottom: 18px;
-  color: #264173;
+  margin: 8px 0 20px;
+  color: #35507f;
+  text-align: left;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
 .payment-form {
-  display: grid;
-  gap: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: 100%;
 }
 
 .card-section,
 .summary-section {
-  border: 1px solid rgba(15, 31, 61, 0.16);
+  border: 1px solid rgba(15, 31, 61, 0.22);
   border-radius: 12px;
   padding: 16px;
-  background: #f8fbff;
+  background: linear-gradient(135deg, #edf3ff 0%, #d8e5ff 100%);
 }
 
 .card-section h2,
 .summary-section h2 {
   margin: 0 0 12px;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: #0b1630;
+  text-align: left;
+  font-weight: 700;
+  letter-spacing: 0.3px;
 }
 
 .row {
   display: grid;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
 
 .two-col {
@@ -405,20 +423,40 @@ h1 {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 
 label {
-  font-size: 0.86rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: #0f1f3d;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 input {
-  border: 1px solid rgba(15, 31, 61, 0.24);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border: 2px solid rgba(15, 31, 61, 0.2);
+  background-color: #ecf2ff;
+  color: #0b1630;
+  border-radius: 10px;
+  padding: 12px 14px;
   font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+input::placeholder {
+  color: #5a6f96;
+}
+
+input:focus {
+  outline: none;
+  border-color: #5281ff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.summary-section {
+  align-self: stretch;
 }
 
 .summary-row {
@@ -429,25 +467,49 @@ input {
   color: #0f1f3d;
 }
 
+.summary-row strong {
+  text-align: right;
+  word-break: break-word;
+}
+
 .disable-resend-toggle {
-  margin-top: 12px;
+  margin-top: 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
   color: #0f1f3d;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.disable-resend-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2f58d9;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .submit-button {
   margin-top: 14px;
   width: 100%;
   border: none;
-  border-radius: 10px;
-  background: #3d5aff;
-  color: #ffffff;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4a78ff, #2f58d9);
+  color: white;
+  font-size: 1rem;
   font-weight: 700;
   padding: 12px 16px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(82, 129, 255, 0.28);
+  letter-spacing: 0.3px;
+}
+
+.submit-button:hover {
+  background: linear-gradient(135deg, #6a94ff, #5281ff);
+  box-shadow: 0 10px 20px rgba(82, 129, 255, 0.35);
+  transform: translateY(-1px);
 }
 
 .submit-button:disabled {
@@ -457,17 +519,29 @@ input {
 
 .error-message {
   margin: 8px 0 0;
-  color: #a12f2f;
-  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(177, 38, 38, 0.1);
+  color: #8e1c1c;
+  border: 1px solid rgba(177, 38, 38, 0.35);
+  font-size: 0.9rem;
 }
 
 .success-message {
   margin-top: 14px;
-  color: #1f7a3f;
-  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(24, 140, 80, 0.12);
+  color: #1b5e3f;
+  border: 1px solid rgba(24, 140, 80, 0.35);
+  font-size: 0.9rem;
 }
 
 @media (max-width: 720px) {
+  .payment-container {
+    padding: 26px 16px;
+  }
+
   .two-col {
     grid-template-columns: 1fr;
   }
