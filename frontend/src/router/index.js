@@ -11,6 +11,7 @@ import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
 import NikTestPageView from '../views/NikTestPageView.vue'
+import JuansPageView from '../views/JuansPageView.vue'
 
 const routes = [
     { path: '/', name: 'home', component: LandingPageView, meta: { title: 'Home' } },
@@ -24,7 +25,8 @@ const routes = [
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },
     { path: '/create-mail/payment', name: 'create-mail-payment', component: CreateMailPaymentView, meta: { title: 'Payment' } },
     { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } },
-    { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView, meta: {  title: 'Nik page'} }
+    { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView, meta: {  title: 'Nik page'} },
+    { path: '/juans-page', name: 'juans-page', component: JuansPageView, meta: { title: "Juan's Page" } }
   
 ]
 
