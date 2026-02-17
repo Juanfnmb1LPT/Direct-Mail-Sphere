@@ -9,6 +9,7 @@ import CreateMailTemplatesView from '../views/CreateMailTemplatesView.vue'
 import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
+import NikTestPageView from '../views/NikTestPageView.vue'
 
 const routes = [
     { path: '/', name: 'home', component: LandingPageView, meta: { title: 'Home' } },
@@ -20,7 +21,9 @@ const routes = [
     { path: '/listings', name: 'listings', component: UserListingsView, meta: { title: 'User Listings' } },
     { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView, meta: { title: 'Create Mail Templates' } },
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },
-    { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } }
+    { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } },
+    { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView, meta: {  title: 'Nik page'} }
+  
 ]
 
 const APP_TITLE = 'Direct Mail Sphere'
