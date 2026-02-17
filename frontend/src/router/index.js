@@ -9,6 +9,7 @@ import CreateMailTemplatesView from '../views/CreateMailTemplatesView.vue'
 import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
+import NikTestPageView from '../views/NikTestPageView.vue'
 
 const routes = [
     { path: '/', name: 'home', component: LandingPageView },
@@ -20,7 +21,8 @@ const routes = [
     { path: '/listings', name: 'listings', component: UserListingsView },
     { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView },
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView },
-    { path: '/map-test', name: 'map-test', component: HouseMapView }
+    { path: '/map-test', name: 'map-test', component: HouseMapView },
+    { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView }
 ]
 
 const router = createRouter({
