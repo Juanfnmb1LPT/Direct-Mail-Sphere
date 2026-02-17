@@ -123,13 +123,14 @@ const dashboardRouteNames = new Set([
   'listings',
   'create-mail',
   'create-mail-form',
+  'create-mail-payment',
   'map-test'
 ])
 
 const showDashboardNav = computed(() => dashboardRouteNames.has(route.name))
 
 const isCreateMailActive = computed(() =>
-  ['create-mail', 'create-mail-form'].includes(route.name)
+  ['create-mail', 'create-mail-form', 'create-mail-payment'].includes(route.name)
 )
 
 const toggleSidebar = () => {
