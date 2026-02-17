@@ -109,17 +109,11 @@
             Sign up
           </button>
         </div>
-
-        <div class="demo-credentials">
-          <p><strong>Test Credentials:</strong></p>
-          <p>Username: <code>test</code></p>
-          <p>Password: <code>test123</code></p>
-        </div>
       </div>
     </div>
 
-    <div v-if="showResetModal" class="modal-backdrop" @click="closeResetModal">
-      <div class="modal-card" @click.stop>
+    <div v-if="showResetModal" class="modal-backdrop">
+      <form class="modal-card" @submit.prevent="sendResetEmail">
         <h3>Reset your password</h3>
         <p>Please enter your email to receive a reset link.</p>
         <input
@@ -132,14 +126,22 @@
           <button type="button" class="outline-button" @click="closeResetModal">
             Cancel
           </button>
-          <button type="button" class="login-button" @click="sendResetEmail">
-            Send email
+          <button
+            type="submit"
+            class="login-button"
+            :disabled="resetLoading"
+          >
+            {{ resetLoading ? 'Sending...' : 'Send email' }}
           </button>
         </div>
+        <div v-if="resetError" class="error-message modal-error">
+          {{ resetError }}
+        </div>
+        <div v-if="resetLoading" class="loading-message">Sending email...</div>
         <div v-if="resetSent" class="success-message modal-success">
           If that email exists, we sent a reset link.
         </div>
-      </div>
+      </form>
     </div>
   </div>
 </template>
@@ -159,6 +161,8 @@ const success = ref(false)
 const showResetModal = ref(false)
 const resetEmail = ref('')
 const resetSent = ref(false)
+const resetError = ref('')
+const resetLoading = ref(false)
 
 const handleLogin = async () => {
   error.value = ''
@@ -183,6 +187,7 @@ const handleLogin = async () => {
 
 const openResetModal = () => {
   resetSent.value = false
+  resetError.value = ''
   resetEmail.value = email.value
   showResetModal.value = true
 }
@@ -191,8 +196,27 @@ const closeResetModal = () => {
   showResetModal.value = false
 }
 
-const sendResetEmail = () => {
-  resetSent.value = true
+const sendResetEmail = async () => {
+  resetError.value = ''
+  resetSent.value = false
+  if (!resetEmail.value) {
+    resetError.value = 'Please enter your email address.'
+    return
+  }
+
+  resetLoading.value = true
+  try {
+    const result = await authService.requestPasswordReset(resetEmail.value)
+    if (result?.success) {
+      resetSent.value = true
+    } else {
+      resetError.value = result?.message || 'Unable to send password email.'
+    }
+  } catch (err) {
+    resetError.value = err?.message || 'Unable to send password email.'
+  } finally {
+    resetLoading.value = false
+  }
 }
 
 const goToSignup = () => {
@@ -538,7 +562,17 @@ const goToHome = () => {
 .modal-card input:focus {
   outline: none;
   border-color: #3d5aff !important;
+  background-color: #ffffff !important;
   box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12) !important;
+}
+
+.modal-card input:-webkit-autofill,
+.modal-card input:-webkit-autofill:hover,
+.modal-card input:-webkit-autofill:focus,
+.modal-card input:-webkit-autofill:active {
+  -webkit-text-fill-color: #0f1f3d;
+  box-shadow: 0 0 0 1000px #f8f9ff inset;
+  transition: background-color 9999s ease-out, color 9999s ease-out;
 }
 
 .modal-actions {

@@ -3,6 +3,7 @@ import cors from 'cors'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import crypto from 'crypto'
 import { Resend } from 'resend'
 import dotenv from 'dotenv'
 
@@ -21,9 +22,13 @@ envPaths.forEach((envPath) => {
 const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '')
 const RESEND_API_KEY = cleanEnv(process.env.RESEND_API_KEY)
 const RESEND_FROM_EMAIL = cleanEnv(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev'
+const RESET_BASE_URL = cleanEnv(process.env.RESET_BASE_URL) || 'http://localhost:5173/reset-password'
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'users.json')
 const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
+const RESET_TOKEN_TTL_MS = 15 * 60 * 1000
+const resetTokens = new Map()
+const userResetTokens = new Map()
 
 let store = { users: [] }
 
@@ -82,6 +87,30 @@ const findUserByLogin = (login) =>
 
 const getPrimaryUser = () => store.users[0]
 
+const pruneExpiredResetTokens = () => {
+    const now = Date.now()
+    for (const [token, entry] of resetTokens.entries()) {
+        if (!entry || entry.expiresAt <= now) {
+            resetTokens.delete(token)
+        }
+    }
+    for (const [userId, token] of userResetTokens.entries()) {
+        if (!resetTokens.has(token)) {
+            userResetTokens.delete(userId)
+        }
+    }
+}
+
+const buildResetUrl = (token) => {
+    try {
+        const url = new URL(RESET_BASE_URL)
+        url.searchParams.set('token', token)
+        return url.toString()
+    } catch {
+        return `${RESET_BASE_URL}?token=${encodeURIComponent(token)}`
+    }
+}
+
 const validateProfile = (profile) => {
     if (!profile?.firstName || !profile?.lastName || !profile?.email) {
         return { ok: false, message: 'First name, last name, and email are required.' }
@@ -115,6 +144,120 @@ app.post('/api/login', (req, res) => {
     }
 
     return res.status(401).json({ success: false, message: 'Invalid credentials' })
+})
+
+app.post('/api/forgot-password', async (req, res) => {
+    const { email } = req.body || {}
+    const cleanedEmail = String(email || '').trim()
+
+    if (!cleanedEmail) {
+        return res.status(400).json({ success: false, message: 'Email is required.' })
+    }
+
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanedEmail)
+    if (!emailValid) {
+        return res.status(400).json({ success: false, message: 'Enter a valid email address.' })
+    }
+
+    if (!resend) {
+        return res.status(500).json({ success: false, message: 'Resend is not configured.' })
+    }
+
+    pruneExpiredResetTokens()
+    const user = store.users.find(
+        (entry) => entry.profile?.email?.toLowerCase() === cleanedEmail.toLowerCase()
+    )
+
+    if (!user) {
+        return res.json({
+            success: true,
+            message: 'If that email exists, we sent your password.'
+        })
+    }
+
+    const existingToken = userResetTokens.get(user.id)
+    if (existingToken) {
+        resetTokens.delete(existingToken)
+    }
+
+    const token = crypto.randomBytes(32).toString('hex')
+    const expiresAt = Date.now() + RESET_TOKEN_TTL_MS
+    resetTokens.set(token, { userId: user.id, expiresAt })
+    userResetTokens.set(user.id, token)
+    const resetUrl = buildResetUrl(token)
+    const emailBodyHtml = `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; color: #0f1f3d;">
+            <h2 style="margin: 0 0 10px; font-size: 20px;">Reset your Direct Mail Sphere password</h2>
+            <p style="margin: 0 0 12px; line-height: 1.5;">Use the link below to set a new password. This link expires in 15 minutes.</p>
+            <a href="${resetUrl}" style="display: inline-block; margin-top: 8px; padding: 10px 16px; background: #3d5aff; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600;">Reset password</a>
+            <p style="margin: 16px 0 0; font-size: 13px; color: #35507f;">If the button does not work, copy and paste this link into your browser:</p>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #35507f;">${resetUrl}</p>
+        </div>
+    `
+
+    try {
+        const sent = await resend.emails.send({
+            from: RESEND_FROM_EMAIL,
+            to: [cleanedEmail],
+            subject: 'Reset your Direct Mail Sphere password',
+            text: `Reset your Direct Mail Sphere password: ${resetUrl}`,
+            html: emailBodyHtml
+        })
+
+        if (sent?.error) {
+            return res.status(502).json({
+                success: false,
+                message: sent.error.message || 'Email provider rejected the request.',
+                providerError: sent.error
+            })
+        }
+
+        return res.json({ success: true, message: 'Password reset email sent.' })
+    } catch (error) {
+        return res.status(502).json({
+            success: false,
+            message: error?.message || 'Unable to send password reset email.'
+        })
+    }
+})
+
+app.post('/api/reset-password', async (req, res) => {
+    const { token, password } = req.body || {}
+    const cleanedToken = String(token || '').trim()
+    const nextPassword = String(password || '').trim()
+
+    if (!cleanedToken) {
+        return res.status(400).json({ success: false, message: 'Reset token is required.' })
+    }
+
+    if (!nextPassword) {
+        return res.status(400).json({ success: false, message: 'New password is required.' })
+    }
+
+    pruneExpiredResetTokens()
+    const entry = resetTokens.get(cleanedToken)
+    if (!entry) {
+        return res.status(400).json({ success: false, message: 'Reset token is invalid or expired.' })
+    }
+
+    const user = store.users.find((item) => item.id === entry.userId)
+    if (!user) {
+        resetTokens.delete(cleanedToken)
+        return res.status(404).json({ success: false, message: 'Account not found.' })
+    }
+
+    user.password = nextPassword
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to save new password.' })
+    }
+
+    resetTokens.delete(cleanedToken)
+    userResetTokens.delete(user.id)
+
+    return res.json({ success: true, message: 'Password updated.' })
 })
 
 app.get('/api/profile', (req, res) => {
@@ -181,7 +324,7 @@ app.post('/api/send-csv', async (req, res) => {
 
     try {
         const subjectPrefix = String(templateName || 'Direct Mail Sphere').trim()
-                const emailBodyHtml = `
+        const emailBodyHtml = `
                     <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; color: #0f1f3d;">
                         <h2 style="margin: 0 0 10px; font-size: 20px;">Your CSV export is ready</h2>
                         <p style="margin: 0 0 12px; line-height: 1.5;">Attached is your CSV export from Direct Mail Sphere.</p>
@@ -193,7 +336,7 @@ app.post('/api/send-csv', async (req, res) => {
             to: [email],
             subject: `${subjectPrefix} - CSV export`,
             text: 'Attached is your CSV export from Direct Mail Sphere.',
-                        html: emailBodyHtml,
+            html: emailBodyHtml,
             attachments: [
                 {
                     filename: 'create-mail.csv',
