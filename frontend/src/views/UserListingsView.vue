@@ -11,7 +11,7 @@
           v-model.trim="searchQuery"
           type="text"
           class="search-input"
-          placeholder="Search by address, city, state, or zip"
+          placeholder="Search by address, city, state, zip, or country"
           aria-label="Search listings"
         />
         <button type="button" class="primary-button" @click="openCreate">
@@ -31,7 +31,7 @@
         </div>
         <template v-else>
           <div class="listings-grid">
-            <div v-for="listing in paginatedListings" :key="listing.id" class="listing-card">
+            <div v-for="listing in visibleListings" :key="listing.id" class="listing-card">
               <div class="listing-image-wrap">
                 <img
                   class="listing-image"
@@ -54,15 +54,6 @@
             </div>
           </div>
 
-          <div v-if="totalPages > 1" class="pagination-row">
-            <button type="button" class="outline-button" :disabled="currentPage === 1" @click="goToPreviousPage">
-              Previous
-            </button>
-            <span class="page-indicator">Page {{ currentPage }} of {{ totalPages }}</span>
-            <button type="button" class="outline-button" :disabled="currentPage === totalPages" @click="goToNextPage">
-              Next
-            </button>
-          </div>
         </template>
       </div>
     </div>
@@ -125,6 +116,14 @@
                 autocomplete="postal-code"
                 required
               />
+            </div>
+
+            <div class="form-group">
+              <label for="country">Country</label>
+              <select id="country" v-model="form.country" required>
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+              </select>
             </div>
 
             <div class="form-group">
@@ -232,7 +231,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 const STORAGE_KEY = 'direct-mail-listings'
 const SAMPLE_SEED_KEY = 'direct-mail-listings-sample-seeded-v1'
 const SAMPLE_SEED_KEY_V2 = 'direct-mail-listings-sample-seeded-v2'
@@ -252,6 +251,7 @@ const DEFAULT_LISTINGS = [
     city: 'Austin',
     state: 'TX',
     zip: '78704',
+    country: 'USA',
     beds: 3,
     baths: 2,
     sqft: 1840,
@@ -266,6 +266,7 @@ const DEFAULT_LISTINGS = [
     city: 'Tampa',
     state: 'FL',
     zip: '33602',
+    country: 'USA',
     beds: 4,
     baths: 3,
     sqft: 2360,
@@ -280,6 +281,7 @@ const DEFAULT_LISTINGS = [
     city: 'Denver',
     state: 'CO',
     zip: '80211',
+    country: 'USA',
     beds: 2,
     baths: 2,
     sqft: 1325,
@@ -294,6 +296,7 @@ const DEFAULT_LISTINGS = [
     city: 'San Diego',
     state: 'CA',
     zip: '92109',
+    country: 'USA',
     beds: 5,
     baths: 4,
     sqft: 3120,
@@ -308,6 +311,7 @@ const DEFAULT_LISTINGS = [
     city: 'Nashville',
     state: 'TN',
     zip: '37212',
+    country: 'USA',
     beds: 3,
     baths: 2.5,
     sqft: 2015,
@@ -322,6 +326,7 @@ const DEFAULT_LISTINGS = [
     city: 'Charlotte',
     state: 'NC',
     zip: '28203',
+    country: 'USA',
     beds: 4,
     baths: 3,
     sqft: 2480,
@@ -336,6 +341,7 @@ const DEFAULT_LISTINGS = [
     city: 'Phoenix',
     state: 'AZ',
     zip: '85018',
+    country: 'USA',
     beds: 3,
     baths: 2,
     sqft: 1760,
@@ -350,6 +356,7 @@ const DEFAULT_LISTINGS = [
     city: 'Orlando',
     state: 'FL',
     zip: '32804',
+    country: 'USA',
     beds: 5,
     baths: 4,
     sqft: 3290,
@@ -364,13 +371,14 @@ const listings = ref([])
 const editingId = ref('')
 const showModal = ref(false)
 const searchQuery = ref('')
-const currentPage = ref(1)
+const visibleCount = ref(ITEMS_PER_PAGE)
 
 const emptyForm = () => ({
   address: '',
   city: '',
   state: '',
   zip: '',
+  country: 'USA',
   beds: '',
   baths: '',
   sqft: '',
@@ -390,22 +398,43 @@ const filteredListings = computed(() => {
   )
 })
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredListings.value.length / ITEMS_PER_PAGE))
+const visibleListings = computed(() =>
+  filteredListings.value.slice(0, visibleCount.value)
 )
 
-const paginatedListings = computed(() => {
-  const start = (currentPage.value - 1) * ITEMS_PER_PAGE
-  return filteredListings.value.slice(start, start + ITEMS_PER_PAGE)
-})
+const hasMoreListings = computed(() =>
+  visibleCount.value < filteredListings.value.length
+)
+
+const loadMoreListings = () => {
+  if (!hasMoreListings.value) return
+  visibleCount.value += ITEMS_PER_PAGE
+}
+
+const handleScroll = () => {
+  const scrollPosition = window.scrollY + window.innerHeight
+  const pageHeight = document.documentElement.scrollHeight
+  const nearBottom = scrollPosition >= pageHeight - 120
+
+  if (window.scrollY <= 8 && visibleCount.value !== ITEMS_PER_PAGE) {
+    visibleCount.value = ITEMS_PER_PAGE
+    return
+  }
+
+  if (!nearBottom) return
+  if (visibleCount.value < filteredListings.value.length) {
+    visibleCount.value = Math.min(visibleCount.value + ITEMS_PER_PAGE, filteredListings.value.length)
+  }
+}
 
 watch(searchQuery, () => {
-  currentPage.value = 1
+  visibleCount.value = ITEMS_PER_PAGE
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 })
 
 watch(filteredListings, () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
+  if (visibleCount.value > filteredListings.value.length) {
+    visibleCount.value = Math.max(ITEMS_PER_PAGE, filteredListings.value.length)
   }
 })
 
@@ -449,6 +478,15 @@ const applyListingMigrations = () => {
       hasChanges = true
     }
 
+    const countryRaw = String(updatedListing.country || '').trim()
+    if (!countryRaw) {
+      updatedListing.country = 'USA'
+      hasChanges = true
+    } else if (countryRaw.toUpperCase() === 'US') {
+      updatedListing.country = 'USA'
+      hasChanges = true
+    }
+
     return updatedListing
   })
 
@@ -469,6 +507,7 @@ const seedSampleListings = () => {
       city: 'Austin',
       state: 'TX',
       zip: '78704',
+      country: 'USA',
       beds: 3,
       baths: 2,
       sqft: 1840,
@@ -483,6 +522,7 @@ const seedSampleListings = () => {
       city: 'Tampa',
       state: 'FL',
       zip: '33602',
+      country: 'USA',
       beds: 4,
       baths: 3,
       sqft: 2360,
@@ -497,6 +537,7 @@ const seedSampleListings = () => {
       city: 'Denver',
       state: 'CO',
       zip: '80211',
+      country: 'USA',
       beds: 2,
       baths: 2,
       sqft: 1325,
@@ -511,6 +552,7 @@ const seedSampleListings = () => {
       city: 'San Diego',
       state: 'CA',
       zip: '92109',
+      country: 'USA',
       beds: 5,
       baths: 4,
       sqft: 3120,
@@ -525,6 +567,7 @@ const seedSampleListings = () => {
       city: 'Nashville',
       state: 'TN',
       zip: '37212',
+      country: 'USA',
       beds: 3,
       baths: 2.5,
       sqft: 2015,
@@ -551,6 +594,7 @@ const seedAdditionalListings = () => {
       city: 'Charlotte',
       state: 'NC',
       zip: '28203',
+      country: 'USA',
       beds: 4,
       baths: 3,
       sqft: 2480,
@@ -565,6 +609,7 @@ const seedAdditionalListings = () => {
       city: 'Phoenix',
       state: 'AZ',
       zip: '85018',
+      country: 'USA',
       beds: 3,
       baths: 2,
       sqft: 1760,
@@ -579,6 +624,7 @@ const seedAdditionalListings = () => {
       city: 'Orlando',
       state: 'FL',
       zip: '32804',
+      country: 'USA',
       beds: 5,
       baths: 4,
       sqft: 3290,
@@ -654,14 +700,6 @@ const saveListings = () => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(listings.value))
 }
 
-const goToPreviousPage = () => {
-  if (currentPage.value > 1) currentPage.value -= 1
-}
-
-const goToNextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value += 1
-}
-
 const resetForm = () => {
   form.value = emptyForm()
   editingId.value = ''
@@ -678,12 +716,16 @@ const closeModal = () => {
 }
 
 const handleSubmit = () => {
+  const normalizedCountryRaw = String(form.value.country || '').trim()
+  const normalizedCountry = normalizedCountryRaw.toUpperCase() === 'US' ? 'USA' : (normalizedCountryRaw || 'USA')
+
   const payload = {
     id: editingId.value || `listing-${Date.now()}`,
     address: form.value.address,
     city: form.value.city,
     state: form.value.state,
     zip: form.value.zip,
+    country: normalizedCountry,
     beds: Number(form.value.beds),
     baths: Number(form.value.baths),
     sqft: parseNumeric(form.value.sqft),
@@ -712,6 +754,7 @@ const startEdit = (listing) => {
     city: listing.city || '',
     state: listing.state || '',
     zip: listing.zip || '',
+    country: String(listing.country || '').trim().toUpperCase() === 'US' ? 'USA' : (listing.country || 'USA'),
     beds: listing.beds,
     baths: listing.baths,
     sqft: formatNumberForInput(listing.sqft),
@@ -777,12 +820,19 @@ const formatListingLabel = (listing) => {
   const city = listing.city || ''
   const state = listing.state || ''
   const zip = listing.zip || ''
-  return [address, city, state, zip].filter(Boolean).join(', ')
+  const country = String(listing.country || '').trim()
+  const normalizedCountry = country.toUpperCase() === 'US' ? 'USA' : country
+  return [address, city, state, zip, normalizedCountry].filter(Boolean).join(', ')
 }
 
 onMounted(() => {
   loadListings()
   applyListingMigrations()
+  window.addEventListener('scroll', handleScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 </script>
 
@@ -912,7 +962,8 @@ onMounted(() => {
   letter-spacing: 0.5px;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   padding: 12px 14px;
   border: 2px solid rgba(15, 31, 61, 0.2);
@@ -924,7 +975,8 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: #5281ff;
   background-color: #ffffff;
@@ -1053,27 +1105,6 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
-.outline-button {
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(82, 129, 255, 0.7);
-  background: linear-gradient(135deg, #4a78ff, #2f58d9);
-  color: #ffffff;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.outline-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6a94ff, #5281ff);
-  transform: translateY(-1px);
-}
-
-.outline-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .empty-state {
   text-align: center;
   color: #264173;
@@ -1081,20 +1112,6 @@ onMounted(() => {
   border-radius: 10px;
   border: 1px dashed rgba(82, 129, 255, 0.45);
   background: rgba(255, 255, 255, 0.55);
-}
-
-.pagination-row {
-  margin-top: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.page-indicator {
-  color: #264173;
-  font-weight: 700;
-  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

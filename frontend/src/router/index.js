@@ -11,21 +11,28 @@ import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
 
 const routes = [
-    { path: '/', name: 'home', component: LandingPageView },
-    { path: '/login', name: 'login', component: LoginView },
-    { path: '/signup', name: 'signup', component: SignupView },
-    { path: '/dashboard', name: 'dashboard', component: DashboardView },
-    { path: '/profile', name: 'profile', component: UpdateProfileView },
-    { path: '/orders', name: 'orders', component: OrderHistoryView },
-    { path: '/listings', name: 'listings', component: UserListingsView },
-    { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView },
-    { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView },
-    { path: '/map-test', name: 'map-test', component: HouseMapView }
+    { path: '/', name: 'home', component: LandingPageView, meta: { title: 'Home' } },
+    { path: '/login', name: 'login', component: LoginView, meta: { title: 'Login' } },
+    { path: '/signup', name: 'signup', component: SignupView, meta: { title: 'Sign Up' } },
+    { path: '/dashboard', name: 'dashboard', component: DashboardView, meta: { title: 'Dashboard' } },
+    { path: '/profile', name: 'profile', component: UpdateProfileView, meta: { title: 'Update Profile' } },
+    { path: '/orders', name: 'orders', component: OrderHistoryView, meta: { title: 'Order History' } },
+    { path: '/listings', name: 'listings', component: UserListingsView, meta: { title: 'User Listings' } },
+    { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView, meta: { title: 'Create Mail Templates' } },
+    { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },
+    { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } }
 ]
+
+const APP_TITLE = 'Direct Mail Sphere'
 
 const router = createRouter({
     history: createWebHistory(),
     routes
+})
+
+router.afterEach((to) => {
+    const pageTitle = to.meta?.title
+    document.title = pageTitle ? `${pageTitle} | ${APP_TITLE}` : APP_TITLE
 })
 
 export default router

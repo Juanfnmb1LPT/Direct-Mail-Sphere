@@ -3,13 +3,27 @@ import cors from 'cors'
 import fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { Resend } from 'resend'
+import dotenv from 'dotenv'
 
 const app = express()
 const PORT = process.env.PORT || 3001
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const envPaths = [
+    path.join(__dirname, '.env'),
+    path.join(__dirname, '..', 'env', '.env')
+]
+
+envPaths.forEach((envPath) => {
+    dotenv.config({ path: envPath, override: false })
+})
+const cleanEnv = (value) => String(value || '').trim().replace(/^['"]|['"]$/g, '')
+const RESEND_API_KEY = cleanEnv(process.env.RESEND_API_KEY)
+const RESEND_FROM_EMAIL = cleanEnv(process.env.RESEND_FROM_EMAIL) || 'onboarding@resend.dev'
 const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'users.json')
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 
 let store = { users: [] }
 
@@ -140,6 +154,70 @@ app.put('/api/profile', async (req, res) => {
     }
 
     return res.json({ success: true, profile: user.profile })
+})
+
+app.post('/api/send-csv', async (req, res) => {
+    const { recipientEmail, csvContent, templateName } = req.body || {}
+
+    const email = String(recipientEmail || '').trim()
+    const csv = String(csvContent || '')
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Recipient email is required.' })
+    }
+
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!emailValid) {
+        return res.status(400).json({ success: false, message: 'Enter a valid recipient email.' })
+    }
+
+    if (!csv) {
+        return res.status(400).json({ success: false, message: 'CSV content is required.' })
+    }
+
+    if (!resend) {
+        return res.status(500).json({ success: false, message: 'Resend is not configured.' })
+    }
+
+    try {
+        const subjectPrefix = String(templateName || 'Direct Mail Sphere').trim()
+        const sent = await resend.emails.send({
+            from: RESEND_FROM_EMAIL,
+            to: [email],
+            subject: `${subjectPrefix} - CSV export`,
+            text: 'Attached is your CSV export from Direct Mail Sphere.',
+            attachments: [
+                {
+                    filename: 'create-mail.csv',
+                    content: Buffer.from(csv).toString('base64')
+                }
+            ]
+        })
+
+        if (sent?.error) {
+            return res.status(502).json({
+                success: false,
+                message: sent.error.message || 'Email provider rejected the request.',
+                providerError: sent.error
+            })
+        }
+
+        const messageId = sent?.data?.id || sent?.id || null
+        if (!messageId) {
+            return res.status(502).json({
+                success: false,
+                message: 'Email provider did not return a message id.',
+                providerResponse: sent
+            })
+        }
+
+        return res.json({ success: true, id: messageId })
+    } catch (error) {
+        return res.status(502).json({
+            success: false,
+            message: error?.message || 'Unable to send CSV email.'
+        })
+    }
 })
 
 const startServer = async () => {

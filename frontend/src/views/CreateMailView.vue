@@ -41,79 +41,143 @@
             </div>
             <p class="import-hint">Choose a saved listing to auto-fill the listing details below.</p>
           </div>
-          <div class="form-grid">
-          <div
-            v-for="field in visibleFields"
-            :key="field.id"
-            class="form-group"
-            :class="{ 'span-2': field.fullWidth }"
-          >
-            <label :for="field.id">{{ field.label }}</label>
-            <div v-if="field.type === 'select-search'" class="select-search">
-              <input
-                :id="field.id"
-                v-model.trim="formData[field.id]"
-                :placeholder="field.placeholder"
-                :autocomplete="field.autocomplete"
-                :required="field.required"
-                @focus="onSelectFocus(field.id)"
-                @input="onSelectInput(field.id)"
-                @blur="onSelectBlur(field)"
-              />
-              <div
-                v-if="isDropdownOpen(field.id)"
-                class="select-dropdown"
-              >
-                <button
-                  v-for="option in filteredOptions(field)"
-                  :key="option.value"
-                  type="button"
-                  class="select-option"
-                  @mousedown.prevent="selectOption(field.id, option)"
-                >
-                  {{ option.label }}
-                </button>
-              </div>
-            </div>
-            <input
-              v-else-if="field.type !== 'textarea' && field.type !== 'file'"
-              :id="field.id"
-              v-model.trim="formData[field.id]"
-              :type="field.type"
-              :placeholder="field.placeholder"
-              :autocomplete="field.autocomplete"
-              :min="field.min"
-              :required="field.required"
-              @focus="onFieldFocus(field.id)"
-              @blur="onFieldBlur(field)"
-            />
-            <input
-              v-else-if="field.type === 'file'"
-              :id="field.id"
-              type="file"
-              :accept="field.accept"
-              :required="field.required"
-              @change="handleFileChange($event, field.id)"
-            />
-            <textarea
-              v-else
-              :id="field.id"
-              v-model.trim="formData[field.id]"
-              :rows="field.rows || 4"
-              :placeholder="field.placeholder"
-              :required="field.required"
-            ></textarea>
-            <p
-              v-if="shouldShowUrlHelp(field)"
-              class="helper-text"
+          <div class="expandable-sections">
+            <details
+              v-for="section in expandableSections"
+              :key="section.id"
+              class="expandable-section"
+              :open="section.defaultOpen"
             >
-              Enter a valid URL (example: https://example.com).
-            </p>
+              <summary class="expandable-summary">{{ section.label }}</summary>
+              <div class="form-grid section-grid">
+                <div
+                  v-for="field in section.fields"
+                  :key="field.id"
+                  class="form-group"
+                  :class="{ 'span-2': field.fullWidth }"
+                >
+                  <label :for="field.id">{{ field.label }}</label>
+                  <div v-if="field.type === 'select-search'" class="select-search">
+                    <input
+                      :id="field.id"
+                      v-model.trim="formData[field.id]"
+                      :placeholder="field.placeholder"
+                      :autocomplete="field.autocomplete"
+                      :required="field.required"
+                      @focus="onSelectFocus(field.id)"
+                      @input="onSelectInput(field.id)"
+                      @blur="onSelectBlur(field)"
+                    />
+                    <div
+                      v-if="isDropdownOpen(field.id)"
+                      class="select-dropdown"
+                    >
+                      <button
+                        v-for="option in filteredOptions(field)"
+                        :key="option.value"
+                        type="button"
+                        class="select-option"
+                        @mousedown.prevent="selectOption(field.id, option)"
+                      >
+                        {{ option.label }}
+                      </button>
+                    </div>
+                  </div>
+                  <template v-else-if="field.type !== 'textarea' && field.type !== 'file' && field.type !== 'select'">
+                    <input
+                      :id="field.id"
+                      v-model.trim="formData[field.id]"
+                      :type="field.type"
+                      :placeholder="field.placeholder"
+                      :autocomplete="field.autocomplete"
+                      :min="field.min"
+                      :required="field.required"
+                      @focus="onFieldFocus(field.id)"
+                      @blur="onFieldBlur(field)"
+                    />
+                    <button
+                      v-if="field.id === 'website'"
+                      type="button"
+                      class="qr-preview-inline-button"
+                      :disabled="!canPreviewWebsiteQr"
+                      @click="openQrPreview"
+                    >
+                      ↗ Preview QR code
+                    </button>
+                  </template>
+                  <select
+                    v-else-if="field.type === 'select'"
+                    :id="field.id"
+                    v-model="formData[field.id]"
+                    :required="field.required"
+                    @focus="onFieldFocus(field.id)"
+                    @blur="onFieldBlur(field)"
+                  >
+                    <option
+                      v-for="option in field.options || []"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <input
+                    v-else-if="field.type === 'file'"
+                    :id="field.id"
+                    type="file"
+                    :accept="field.accept"
+                    :required="field.required"
+                    @change="handleFileChange($event, field.id)"
+                  />
+                  <textarea
+                    v-else
+                    :id="field.id"
+                    v-model.trim="formData[field.id]"
+                    :rows="field.rows || 4"
+                    :placeholder="field.placeholder"
+                    :required="field.required"
+                  ></textarea>
+                  <p
+                    v-if="shouldShowUrlHelp(field)"
+                    class="helper-text"
+                  >
+                    Enter a valid URL (example: https://example.com).
+                  </p>
+                </div>
+              </div>
+            </details>
           </div>
+
+        <div class="properties-count-block">
+          <label for="properties_to_advertise" class="properties-count-label"> Total Properties to send to:</label>
+          <input
+            id="properties_to_advertise"
+            v-model.number="propertiesToAdvertise"
+            type="number"
+            min="1"
+            step="1"
+            class="properties-count-input"
+            @blur="propertiesCountTouched = true"
+          />
+          <p v-if="showPropertiesCountError" class="properties-count-error">
+            For mock purposes the max is 10.
+          </p>
+
+          <label class="disable-resend-toggle">
+            <input
+              v-model="disableResend"
+              type="checkbox"
+            />
+            Disable Resend (download CSV only)
+          </label>
         </div>
 
         <div v-if="success" class="success-message">
-          Draft created. You can refine details next.
+          {{ submitStatusMessage || 'Draft CSV created!' }}
+        </div>
+
+        <div v-if="submitError" class="error-message">
+          {{ submitError }}
         </div>
 
         <button type="submit" class="primary-button">Create mail</button>
@@ -134,6 +198,16 @@
         </button>
       </div>
     </div>
+
+    <div v-if="isQrPreviewOpen" class="qr-preview-overlay" @click.self="closeQrPreview">
+      <div class="qr-preview-card">
+        <button type="button" class="qr-preview-close" @click="closeQrPreview" aria-label="Close QR preview">✕</button>
+        <h4 class="qr-preview-title">Scan to visit website</h4>
+        <p class="qr-preview-subtitle">Use your phone camera to scan this code.</p>
+        <img :src="websiteQrImageSrc" alt="Website QR code" class="qr-preview-image" />
+        <p class="qr-preview-url">{{ websiteQrValue }}</p>
+      </div>
+    </div>
     </div>
   </div>
 </template>
@@ -149,11 +223,18 @@ const router = useRouter()
 const success = ref(false)
 const formData = ref({})
 const fieldState = ref({})
+const propertiesToAdvertise = ref(1)
+const propertiesCountTouched = ref(false)
+const isQrPreviewOpen = ref(false)
+const disableResend = ref(false)
+const submitStatusMessage = ref('')
+const submitError = ref('')
 const showBack = ref(false)
 const profile = ref(null)
 const listings = ref([])
 const LISTINGS_KEY = 'direct-mail-listings'
 const ORDERS_KEY = 'direct-mail-orders'
+const API_BASE = 'http://localhost:3001'
 
 const defaultFields = [
   {
@@ -164,6 +245,17 @@ const defaultFields = [
     autocomplete: 'street-address',
     required: true,
     fullWidth: true
+  },
+  {
+    id: 'country',
+    label: 'Country',
+    type: 'select',
+    options: [
+      { value: 'USA', label: 'USA' },
+      { value: 'Canada', label: 'Canada' }
+    ],
+    required: true,
+    defaultValue: 'USA'
   },
   {
     id: 'audience_size',
@@ -343,6 +435,15 @@ const buildTemplateTwoFields = (listingOptions) => [
     fullWidth: true
   },
   {
+    id: 'website',
+    label: 'Website',
+    type: 'url',
+    placeholder: 'https://www.example.com',
+    autocomplete: 'url',
+    required: true,
+    fullWidth: true
+  },
+  {
     id: 'listing_address',
     label: 'Address',
     type: 'text',
@@ -373,6 +474,17 @@ const buildTemplateTwoFields = (listingOptions) => [
     placeholder: '00000',
     autocomplete: 'postal-code',
     required: true
+  },
+  {
+    id: 'listing_country',
+    label: 'Country',
+    type: 'select',
+    options: [
+      { value: 'USA', label: 'USA' },
+      { value: 'Canada', label: 'Canada' }
+    ],
+    required: true,
+    defaultValue: 'USA'
   },
   {
     id: 'listing_img1',
@@ -481,6 +593,17 @@ const buildTemplateThreeFields = (listingOptions) => [
     required: true
   },
   {
+    id: 'listing_country',
+    label: 'Country',
+    type: 'select',
+    options: [
+      { value: 'USA', label: 'USA' },
+      { value: 'Canada', label: 'Canada' }
+    ],
+    required: true,
+    defaultValue: 'USA'
+  },
+  {
     id: 'listing_beds',
     label: 'Num Beds',
     type: 'number',
@@ -557,7 +680,9 @@ const formatListingLabel = (listing) => {
   const address = listing.address || ''
   const city = listing.city || ''
   const state = listing.state || ''
-  return [address, city, state].filter(Boolean).join(', ')
+  const country = String(listing.country || '').trim()
+  const normalizedCountry = country.toUpperCase() === 'US' ? 'USA' : country
+  return [address, city, state, normalizedCountry].filter(Boolean).join(', ')
 }
 
 const listingOptions = computed(() =>
@@ -590,6 +715,48 @@ const visibleFields = computed(() =>
     (field) => field.id !== 'listing_import' && !field.omitFromForm
   )
 )
+
+const addressFieldIds = new Set([
+  'address',
+  'country',
+  'listing_address',
+  'listing_city',
+  'listing_state',
+  'listing_zip',
+  'listing_country'
+])
+
+const assetFieldIds = new Set([
+  'agent_photo',
+  'company_logo',
+  'website',
+  'listing_img1',
+  'listing_beds',
+  'listing_baths',
+  'listing_sqft',
+  'listing_price'
+])
+
+const getFieldSectionId = (fieldId) => {
+  if (addressFieldIds.has(fieldId)) return 'address'
+  if (assetFieldIds.has(fieldId)) return 'assets'
+  return 'personal'
+}
+
+const expandableSections = computed(() => {
+  const definitions = [
+    { id: 'personal', label: 'Personal information', defaultOpen: true },
+    { id: 'address', label: 'Address', defaultOpen: false },
+    { id: 'assets', label: 'Assets', defaultOpen: false }
+  ]
+
+  return definitions
+    .map((section) => ({
+      ...section,
+      fields: visibleFields.value.filter((field) => getFieldSectionId(field.id) === section.id)
+    }))
+    .filter((section) => section.fields.length > 0)
+})
 
 const fieldProfileMap = {
   first_name: 'firstName',
@@ -629,6 +796,12 @@ const applyListingToForm = (listingId) => {
   if ('listing_zip' in formData.value) {
     formData.value.listing_zip = listing.zip || ''
   }
+  if ('listing_country' in formData.value) {
+    const normalizedCountry = String(listing.country || '').trim().toUpperCase() === 'US'
+      ? 'USA'
+      : String(listing.country || '').trim()
+    formData.value.listing_country = normalizedCountry || formData.value.listing_country || 'USA'
+  }
   if ('listing_beds' in formData.value) {
     formData.value.listing_beds = listing.beds ?? ''
   }
@@ -650,7 +823,7 @@ watch(
   formFields,
   (fields) => {
     formData.value = fields.reduce((acc, field) => {
-      acc[field.id] = ''
+      acc[field.id] = field.defaultValue ?? ''
       return acc
     }, {})
     fieldState.value = fields.reduce((acc, field) => {
@@ -773,12 +946,54 @@ const isValidUrl = (value) => {
   }
 }
 
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
+
 const shouldShowUrlHelp = (field) => {
   if (field.type !== 'url') return false
   const state = fieldState.value[field.id]
   if (!state) return false
   return (state.focused || state.touched) && !isValidUrl(formData.value[field.id])
 }
+
+const normalizeWebsiteValueForQr = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (/^https?:\/\//i.test(raw)) return raw
+  if (/^www\./i.test(raw)) return `https://${raw}`
+  return `https://www.${raw}`
+}
+
+const websiteQrValue = computed(() => normalizeWebsiteValueForQr(formData.value.website))
+
+const websiteQrImageSrc = computed(() => {
+  if (!websiteQrValue.value) return ''
+  return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(websiteQrValue.value)}`
+})
+
+const canPreviewWebsiteQr = computed(() => {
+  const websiteState = fieldState.value.website
+  if (!websiteState?.touched || websiteState.focused) return false
+  return isValidUrl(websiteQrValue.value)
+})
+
+const openQrPreview = () => {
+  if (!canPreviewWebsiteQr.value) return
+  isQrPreviewOpen.value = true
+}
+
+const closeQrPreview = () => {
+  isQrPreviewOpen.value = false
+}
+
+const normalizedPropertiesCount = computed(() => {
+  const parsed = Number(propertiesToAdvertise.value)
+  if (!Number.isFinite(parsed)) return 0
+  return Math.floor(parsed)
+})
+
+const showPropertiesCountError = computed(() =>
+  propertiesCountTouched.value && normalizedPropertiesCount.value > 10
+)
 
 const loadOrders = () => {
   if (typeof window === 'undefined') return []
@@ -796,39 +1011,75 @@ const saveOrders = (orders) => {
   window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
 }
 
+const sendCsvToEmail = async ({ recipientEmail, csvContent, templateName }) => {
+  const response = await fetch(`${API_BASE}/api/send-csv`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipientEmail, csvContent, templateName })
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}))
+    throw new Error(errorBody?.message || 'Unable to send CSV email.')
+  }
+
+  return response.json()
+}
+
 const buildOrderAddress = () => {
   const directAddress = String(formData.value.address || '').trim()
-  if (directAddress) return directAddress
+  const directCountry = String(formData.value.country || '').trim()
+  if (directAddress) {
+    return [directAddress, directCountry].filter(Boolean).join(', ')
+  }
 
   const listingAddress = String(formData.value.listing_address || '').trim()
   const listingCity = String(formData.value.listing_city || '').trim()
   const listingState = String(formData.value.listing_state || '').trim()
   const listingZip = String(formData.value.listing_zip || '').trim()
+  const listingCountry = String(formData.value.listing_country || '').trim()
 
   const cityState = [listingCity, listingState].filter(Boolean).join(', ')
   const cityStateZip = [cityState, listingZip].filter(Boolean).join(' ')
-  const listingFull = [listingAddress, cityStateZip].filter(Boolean).join(', ')
+  const listingFull = [listingAddress, cityStateZip, listingCountry].filter(Boolean).join(', ')
 
   return listingFull
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
+  success.value = false
+  submitStatusMessage.value = ''
+  submitError.value = ''
+  propertiesCountTouched.value = true
+  const totalProperties = normalizedPropertiesCount.value
+  if (totalProperties < 1 || totalProperties > 10) {
+    return
+  }
+
+  const recipientEmail = String(formData.value.email || '').trim()
+  if (!recipientEmail || !isValidEmail(recipientEmail)) {
+    submitError.value = 'Enter a valid email in the Email field before creating mail.'
+    return
+  }
+
   formFields.value
     .filter((field) => field.type === 'url')
     .forEach((field) => normalizeUrlField(field.id))
 
   const exportFields = formFields.value.filter((field) => !field.omitFromExport)
 
+  const exportRow = [
+    selectedTemplate.value,
+    ...exportFields.map((field) =>
+      field.type === 'select-search'
+        ? getSelectSearchValue(field)
+        : formData.value[field.id]
+    )
+  ]
+
   const rows = [
     ['template', ...exportFields.map((field) => field.id)],
-    [
-      selectedTemplate.value,
-      ...exportFields.map((field) =>
-        field.type === 'select-search'
-          ? getSelectSearchValue(field)
-          : formData.value[field.id]
-      )
-    ]
+    ...Array.from({ length: totalProperties }, () => [...exportRow])
   ]
 
   const csv = rows
@@ -867,6 +1118,23 @@ const handleSubmit = () => {
   link.download = 'create-mail.csv'
   link.click()
   URL.revokeObjectURL(url)
+
+  if (disableResend.value) {
+    submitStatusMessage.value = 'Draft CSV created! Resend is disabled.'
+  } else {
+    try {
+      await sendCsvToEmail({
+        recipientEmail,
+        csvContent: csv,
+        templateName: selectedTemplateLabel.value
+      })
+      submitStatusMessage.value = `Draft CSV created and sent to ${recipientEmail}.`
+    } catch (error) {
+      submitError.value = error?.message || 'Draft CSV was created, but email sending failed.'
+      submitStatusMessage.value = 'Draft CSV created!'
+    }
+  }
+
   success.value = true
 }
 
@@ -1038,6 +1306,56 @@ const goToTemplates = () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
+}
+
+.expandable-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expandable-section {
+  border: 1px solid rgba(15, 31, 61, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #edf3ff 0%, #d8e5ff 100%);
+  overflow: hidden;
+}
+
+.expandable-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 42px 12px 16px;
+  font-weight: 700;
+  color: #0b1630;
+  letter-spacing: 0.2px;
+  user-select: none;
+  position: relative;
+}
+
+.expandable-summary::-webkit-details-marker {
+  display: none;
+}
+
+.expandable-summary::after {
+  content: '▾';
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 0.95rem;
+  color: #1d3563;
+  transition: transform 0.2s ease;
+}
+
+.expandable-section[open] .expandable-summary {
+  border-bottom: 1px solid rgba(15, 31, 61, 0.14);
+}
+
+.expandable-section[open] .expandable-summary::after {
+  transform: rotate(180deg);
+}
+
+.section-grid {
+  padding: 14px 14px 0;
 }
 
 .import-block {
@@ -1215,10 +1533,151 @@ const goToTemplates = () => {
   font-size: 0.9rem;
 }
 
+.error-message {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(177, 38, 38, 0.1);
+  color: #8e1c1c;
+  border: 1px solid rgba(177, 38, 38, 0.35);
+  font-size: 0.9rem;
+}
+
 .helper-text {
   margin-top: 8px;
   font-size: 0.85rem;
   color: #3b4f72;
+}
+
+.qr-preview-inline-button {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: #2f58d9;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.qr-preview-inline-button:disabled {
+  color: #6d7da0;
+  cursor: not-allowed;
+}
+
+.properties-count-block {
+  margin-top: 14px;
+}
+
+.properties-count-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f1f3d;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.properties-count-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid rgba(15, 31, 61, 0.2);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  background-color: #ecf2ff;
+  color: #0b1630;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.properties-count-input:focus {
+  outline: none;
+  border-color: #5281ff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(82, 129, 255, 0.15);
+}
+
+.properties-count-error {
+  margin: 8px 0 0;
+  color: #b12626;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.disable-resend-toggle {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f1f3d;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.disable-resend-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2f58d9;
+}
+
+.qr-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 22, 48, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1200;
+}
+
+.qr-preview-card {
+  width: min(420px, 92vw);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px;
+  position: relative;
+  text-align: center;
+  box-shadow: 0 24px 48px rgba(11, 22, 48, 0.35);
+}
+
+.qr-preview-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(11, 22, 48, 0.9);
+  color: #ffffff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.qr-preview-title {
+  margin: 4px 0 6px;
+  color: #0b1630;
+  font-size: 1.08rem;
+}
+
+.qr-preview-subtitle {
+  margin: 0 0 12px;
+  color: #3b4f72;
+  font-size: 0.88rem;
+}
+
+.qr-preview-image {
+  width: min(320px, 72vw);
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 31, 61, 0.18);
+}
+
+.qr-preview-url {
+  margin: 10px 0 0;
+  color: #264173;
+  font-size: 0.8rem;
+  word-break: break-all;
 }
 
 @media (max-width: 1000px) {
