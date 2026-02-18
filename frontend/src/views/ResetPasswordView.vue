@@ -16,7 +16,8 @@
       </div>
     </nav>
 
-    <div class="reset-shell">
+    <main>
+      <div class="reset-shell">
       <div class="reset-panel">
         <h2 class="panel-title">Choose a new password</h2>
 
@@ -166,6 +167,7 @@
         </form>
       </div>
     </div>
+    </main>
   </div>
 </template>
 
@@ -475,18 +477,15 @@ const goToLogin = () => {
 }
 
 .strength-value.weak {
-  background: rgba(255, 107, 107, 0.15);
-  color: #ff6b6b;
+  color: #d32f2f;
 }
 
 .strength-value.medium {
-  background: rgba(245, 194, 107, 0.2);
-  color: #c77b12;
+  color: #f57f17;
 }
 
 .strength-value.strong {
-  background: rgba(64, 255, 144, 0.18);
-  color: #18a359;
+  color: #0a2e0a;
 }
 
 .strength-list {
@@ -506,21 +505,32 @@ const goToLogin = () => {
 }
 
 .strength-list li.met {
-  color: #18a359;
-  font-weight: 600;
+  color: #0a2e0a;
 }
 
 .requirement-box {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  border: 1.5px solid #9aaccc;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(91, 107, 143, 0.6);
   background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
 }
 
-.strength-list li.met .requirement-box {
-  border-color: #18a359;
-  background: #18a359;
+.strength-list li.met .requirement-box::after {
+  content: '✓';
+  color: #0b1630;
+  background: #2e7d32;
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-weight: 700;
 }
 
 .helper-text {
@@ -581,7 +591,7 @@ const goToLogin = () => {
 }
 
 .success-message {
-  color: #7dffa5;
+  color: #0a2e0a;
   margin-bottom: clamp(0.75rem, 2.5vw, 1rem);
   padding: clamp(10px, 2vw, 12px);
   background: rgba(64, 255, 144, 0.12);

@@ -1,4 +1,4 @@
-import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY } from './profileDefaults'
+import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY, getCurrentUserId } from './profileDefaults'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -20,10 +20,21 @@ const cacheProfile = (profile) => {
     }
 }
 
+const getAuthHeaders = () => {
+    const userId = getCurrentUserId()
+    const headers = { 'Content-Type': 'application/json' }
+    if (userId) {
+        headers['x-user-id'] = userId
+    }
+    return headers
+}
+
 export const profileService = {
     async getProfile() {
         try {
-            const response = await fetch(`${API_BASE}/api/profile`)
+            const response = await fetch(`${API_BASE}/api/profile`, {
+                headers: getAuthHeaders()
+            })
             if (!response.ok) {
                 throw new Error('Failed to load profile')
             }
@@ -43,7 +54,7 @@ export const profileService = {
     async updateProfile(profile) {
         const response = await fetch(`${API_BASE}/api/profile`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(profile)
         })
 

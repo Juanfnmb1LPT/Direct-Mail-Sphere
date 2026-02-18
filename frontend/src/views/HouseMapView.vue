@@ -1,5 +1,7 @@
 <template>
-  <HouseMapComponent />
+  <main>
+    <HouseMapComponent />
+  </main>
 </template>
 
 <script setup>

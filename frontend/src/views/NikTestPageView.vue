@@ -1,5 +1,6 @@
 <template>
-  <div class="nik-test-root">
+  <main>
+    <div class="nik-test-root">
     <section class="dashboard-page">
       <div class="dashboard-content">
         <div class="dashboard-hero">
@@ -110,7 +111,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>

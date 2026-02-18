@@ -1,5 +1,6 @@
 <template>
-  <div class="verify-email-page">
+  <main>
+    <div class="verify-email-page">
     <div class="verify-card">
       <div v-if="isVerifying" class="verify-loading">
         <div class="spinner"></div>
@@ -22,7 +23,8 @@
         </button>
       </div>
     </div>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>

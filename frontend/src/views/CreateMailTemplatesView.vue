@@ -1,5 +1,6 @@
 <template>
-  <div class="templates-container">
+  <main>
+    <div class="templates-container">
     <div class="templates-shell">
       <div class="templates-section">
         <div class="templates-heading">
@@ -73,7 +74,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>

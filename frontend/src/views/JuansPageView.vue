@@ -1,5 +1,6 @@
 <template>
-  <div class="juans-page-container">
+  <main>
+    <div class="juans-page-container">
     <h1>Juan's Page</h1>
     <button type="button" class="action-button" @click="openPersonalWebsite">
       Gaming Website
@@ -12,6 +13,7 @@
     </button>
     <p v-if="showHello" class="hello-text">hello world</p>
   </div>
+  </main>
 </template>
 
 <script setup>

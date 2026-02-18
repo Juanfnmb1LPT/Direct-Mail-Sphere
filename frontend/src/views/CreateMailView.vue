@@ -1,5 +1,6 @@
 <template>
-  <div class="create-mail-container">
+  <main>
+    <div class="create-mail-container">
     <button type="button" class="back-button" @click="goToTemplates">
       <span class="back-icon" aria-hidden="true">←</span>
       <span>Back to templates</span>
@@ -176,8 +177,8 @@
         </p>
 
         <button type="submit" class="primary-button">Continue to payment</button>
-      </form>
-    </div>
+        </form>
+      </div>
 
     <div class="preview-box">
       <div class="preview-header">
@@ -204,7 +205,8 @@
       </div>
     </div>
     </div>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>

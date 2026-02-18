@@ -1,5 +1,6 @@
 <template>
-  <div class="order-history-container">
+  <main>
+    <div class="order-history-container">
     <header class="order-history-header">
       <div class="header-left">
         <h1>Order History</h1>
@@ -90,12 +91,29 @@
       </table>
     </div>
   </div>
+  </main>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { getCurrentUserId } from '../services/profileDefaults'
 
-const ORDERS_KEY = 'direct-mail-orders'
+const ORDERS_KEY_PREFIX = 'direct-mail-orders'
+const API_BASE = 'http://localhost:3001'
+
+const getStorageKey = () => {
+  const userId = getCurrentUserId()
+  return userId ? `${ORDERS_KEY_PREFIX}-${userId}` : `${ORDERS_KEY_PREFIX}-guest`
+}
+
+const getAuthHeaders = () => {
+  const userId = getCurrentUserId()
+  const headers = { 'Content-Type': 'application/json' }
+  if (userId) {
+    headers['x-user-id'] = userId
+  }
+  return headers
+}
 
 const orders = ref([])
 const statusOptions = ['placed', 'in progress', 'issue', 'done']
@@ -112,10 +130,28 @@ const visibleCount = ref(20)
 const sortKey = ref('date')
 const sortDir = ref('desc')
 
-const loadOrders = () => {
+const loadOrders = async () => {
   if (typeof window === 'undefined') return []
   try {
-    const raw = window.localStorage.getItem(ORDERS_KEY)
+    // Try to load from API first
+    const response = await fetch(`${API_BASE}/api/order-history`, {
+      headers: getAuthHeaders()
+    })
+    if (response.ok) {
+      const data = await response.json()
+      const apiOrders = data?.orderHistory || []
+      if (apiOrders.length > 0) {
+        window.localStorage.setItem(getStorageKey(), JSON.stringify(apiOrders))
+        return apiOrders
+      }
+    }
+  } catch (error) {
+    // API is unavailable, fall back to localStorage
+  }
+
+  // Fall back to user-specific localStorage
+  try {
+    const raw = window.localStorage.getItem(getStorageKey())
     const parsed = raw ? JSON.parse(raw) : []
     return Array.isArray(parsed) ? parsed : []
   } catch {
@@ -123,9 +159,21 @@ const loadOrders = () => {
   }
 }
 
-const saveOrders = (nextOrders) => {
+const saveOrders = async (nextOrders) => {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(nextOrders))
+  // Save to user-specific localStorage first
+  window.localStorage.setItem(getStorageKey(), JSON.stringify(nextOrders))
+
+  // Then sync with API
+  try {
+    await fetch(`${API_BASE}/api/order-history`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ orderHistory: nextOrders })
+    })
+  } catch (error) {
+    // API is unavailable, data is already saved locally
+  }
 }
 
 const normalizeStatus = (value) => {
@@ -302,8 +350,9 @@ const updateStatus = (orderId, nextStatus) => {
   saveOrders(nextOrders)
 }
 
-onMounted(() => {
-  orders.value = loadOrders().map((order) => ({
+onMounted(async () => {
+  const loadedOrders = await loadOrders()
+  orders.value = loadedOrders.map((order) => ({
     ...order,
     status: normalizeStatus(order.status)
   }))

@@ -1,5 +1,6 @@
 <template>
-  <div class="listings-container">
+  <main>
+    <div class="listings-container">
     <div class="listings-layout">
       <div class="listings-header">
         <h2>User Listings</h2>
@@ -228,144 +229,34 @@
       </div>
     </div>
   </div>
+  </main>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-const STORAGE_KEY = 'direct-mail-listings'
-const SAMPLE_SEED_KEY = 'direct-mail-listings-sample-seeded-v1'
-const SAMPLE_SEED_KEY_V2 = 'direct-mail-listings-sample-seeded-v2'
-const SAMPLE_IMAGES_SEED_KEY = 'direct-mail-listings-sample-images-seeded-v1'
-const SAMPLE_IMAGES_SEED_KEY_V2 = 'direct-mail-listings-sample-images-seeded-v2'
+import { getCurrentUserId } from '../services/profileDefaults'
+
+const API_BASE = 'http://localhost:3001'
 const ITEMS_PER_PAGE = 6
+
+const getStorageKey = () => {
+  const userId = getCurrentUserId()
+  return userId ? `direct-mail-listings-${userId}` : 'direct-mail-listings-guest'
+}
 const fallbackListingImage = new URL('../assets/placeholder.png', import.meta.url).href
 const birchUpdatedImage =
   'https://assets.architecturaldesigns.com/cdn-cgi/image/width=3840,quality=75,format=auto,slow-connection-quality=50/plan_assets/325000035/original/290101IY_01_1693600745.jpg'
 const cedarUpdatedImage =
   'https://hips.hearstapps.com/hmg-prod/images/imagereader-3-1550604185.jpg'
 
-const DEFAULT_LISTINGS = [
-  {
-    id: 'listing-default-1',
-    address: '1204 Willow Creek Dr',
-    city: 'Austin',
-    state: 'TX',
-    zip: '78704',
-    country: 'USA',
-    beds: 3,
-    baths: 2,
-    sqft: 1840,
-    price: 489000,
-    img1: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLbTGWnADS-iYHrvrCjM5BmmJ4RIDr_mx0Xg&s',
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-2',
-    address: '88 Harbor Lane',
-    city: 'Tampa',
-    state: 'FL',
-    zip: '33602',
-    country: 'USA',
-    beds: 4,
-    baths: 3,
-    sqft: 2360,
-    price: 625000,
-    img1: 'https://hips.hearstapps.com/hmg-prod/images/dutch-colonial-house-style-66956274903da.jpg?crop=1.00xw:0.671xh;0,0.131xh&resize=1120:*',
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-3',
-    address: '4510 Maple Ridge Ave',
-    city: 'Denver',
-    state: 'CO',
-    zip: '80211',
-    country: 'USA',
-    beds: 2,
-    baths: 2,
-    sqft: 1325,
-    price: 415000,
-    img1: 'https://saterdesign.com/cdn/shop/files/9024-Main-Image_1600x.jpg?v=1744743942',
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-4',
-    address: '972 Ocean View Ct',
-    city: 'San Diego',
-    state: 'CA',
-    zip: '92109',
-    country: 'USA',
-    beds: 5,
-    baths: 4,
-    sqft: 3120,
-    price: 1195000,
-    img1: 'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-5',
-    address: '300 Birch Hollow Rd',
-    city: 'Nashville',
-    state: 'TN',
-    zip: '37212',
-    country: 'USA',
-    beds: 3,
-    baths: 2.5,
-    sqft: 2015,
-    price: 559000,
-    img1: birchUpdatedImage,
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-6',
-    address: '715 Cedar Pointe Way',
-    city: 'Charlotte',
-    state: 'NC',
-    zip: '28203',
-    country: 'USA',
-    beds: 4,
-    baths: 3,
-    sqft: 2480,
-    price: 648000,
-    img1: cedarUpdatedImage,
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-7',
-    address: '1042 Pine Summit Rd',
-    city: 'Phoenix',
-    state: 'AZ',
-    zip: '85018',
-    country: 'USA',
-    beds: 3,
-    baths: 2,
-    sqft: 1760,
-    price: 534000,
-    img1: 'https://www.houseplans.net/news/wp-content/uploads/2023/07/57260-768.jpeg',
-    img2: '',
-    img3: ''
-  },
-  {
-    id: 'listing-default-8',
-    address: '261 Lakeview Terrace',
-    city: 'Orlando',
-    state: 'FL',
-    zip: '32804',
-    country: 'USA',
-    beds: 5,
-    baths: 4,
-    sqft: 3290,
-    price: 925000,
-    img1: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtUqEvZMIrG_qXkTjmccttegKRRx8o5sUtNQ&s',
-    img2: '',
-    img3: ''
+const getAuthHeaders = () => {
+  const userId = getCurrentUserId()
+  const headers = { 'Content-Type': 'application/json' }
+  if (userId) {
+    headers['x-user-id'] = userId
   }
-]
+  return headers
+}
 
 const listings = ref([])
 const editingId = ref('')
@@ -438,266 +329,82 @@ watch(filteredListings, () => {
   }
 })
 
-const loadListings = () => {
+const loadListings = async () => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    // Try to load from API first
+    const response = await fetch(`${API_BASE}/api/listings`, {
+      headers: getAuthHeaders()
+    })
+    if (response.ok) {
+      const data = await response.json()
+      const apiListings = data?.listings || []
+      if (apiListings.length > 0) {
+        listings.value = apiListings
+        // Also save to user-specific localStorage as backup
+        localStorage.setItem(getStorageKey(), JSON.stringify(apiListings))
+        return
+      }
+    }
+  } catch (error) {
+    // API is unavailable, fall back to localStorage
+  }
+
+  // Fall back to user-specific localStorage
+  try {
+    const raw = localStorage.getItem(getStorageKey())
     if (raw === null) {
-      listings.value = DEFAULT_LISTINGS.map((listing) => ({ ...listing }))
-      saveListings()
+      listings.value = []
       return
     }
     listings.value = JSON.parse(raw)
   } catch (error) {
-    listings.value = DEFAULT_LISTINGS.map((listing) => ({ ...listing }))
-    saveListings()
+    listings.value = []
   }
 }
 
 const applyListingMigrations = () => {
-  let hasChanges = false
-
-  const migrated = listings.value.map((listing) => {
+  // Apply migrations but don't auto-save
+  // Migrations only apply to loaded listings from storage/API
+  listings.value = listings.value.map((listing) => {
     const updatedListing = { ...listing }
 
     if (/^300\s+birch\s+hollow\s+rd$/i.test(String(updatedListing.address || '').trim())) {
-      if (updatedListing.img1 !== birchUpdatedImage) {
-        updatedListing.img1 = birchUpdatedImage
-        hasChanges = true
-      }
+      updatedListing.img1 = birchUpdatedImage
     }
 
     if (/cedar\s+point(e)?/i.test(String(updatedListing.address || '').trim())) {
-      if (updatedListing.img1 !== cedarUpdatedImage) {
-        updatedListing.img1 = cedarUpdatedImage
-        hasChanges = true
-      }
+      updatedListing.img1 = cedarUpdatedImage
     }
 
     if (/^907\s+windrose\s+dr$/i.test(String(updatedListing.address || '').trim())) {
       updatedListing.address = '742 Magnolia Crest Dr'
-      hasChanges = true
     }
 
     const countryRaw = String(updatedListing.country || '').trim()
     if (!countryRaw) {
       updatedListing.country = 'USA'
-      hasChanges = true
     } else if (countryRaw.toUpperCase() === 'US') {
       updatedListing.country = 'USA'
-      hasChanges = true
     }
 
     return updatedListing
   })
+}
 
-  if (hasChanges) {
-    listings.value = migrated
-    saveListings()
+const saveListings = async () => {
+  // Save to user-specific localStorage first
+  localStorage.setItem(getStorageKey(), JSON.stringify(listings.value))
+
+  // Then sync with API
+  try {
+    await fetch(`${API_BASE}/api/listings`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ listings: listings.value })
+    })
+  } catch (error) {
+    // API is unavailable, data is already saved locally
   }
-}
-
-const seedSampleListings = () => {
-  const alreadySeeded = localStorage.getItem(SAMPLE_SEED_KEY) === 'true'
-  if (alreadySeeded) return
-
-  const sampleListings = [
-    {
-      id: `listing-${Date.now()}-sample-1`,
-      address: '1204 Willow Creek Dr',
-      city: 'Austin',
-      state: 'TX',
-      zip: '78704',
-      country: 'USA',
-      beds: 3,
-      baths: 2,
-      sqft: 1840,
-      price: 489000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-2`,
-      address: '88 Harbor Lane',
-      city: 'Tampa',
-      state: 'FL',
-      zip: '33602',
-      country: 'USA',
-      beds: 4,
-      baths: 3,
-      sqft: 2360,
-      price: 625000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-3`,
-      address: '4510 Maple Ridge Ave',
-      city: 'Denver',
-      state: 'CO',
-      zip: '80211',
-      country: 'USA',
-      beds: 2,
-      baths: 2,
-      sqft: 1325,
-      price: 415000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-4`,
-      address: '972 Ocean View Ct',
-      city: 'San Diego',
-      state: 'CA',
-      zip: '92109',
-      country: 'USA',
-      beds: 5,
-      baths: 4,
-      sqft: 3120,
-      price: 1195000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-5`,
-      address: '300 Birch Hollow Rd',
-      city: 'Nashville',
-      state: 'TN',
-      zip: '37212',
-      country: 'USA',
-      beds: 3,
-      baths: 2.5,
-      sqft: 2015,
-      price: 559000,
-      img1: '',
-      img2: '',
-      img3: ''
-    }
-  ]
-
-  listings.value = [...sampleListings, ...listings.value]
-  saveListings()
-  localStorage.setItem(SAMPLE_SEED_KEY, 'true')
-}
-
-const seedAdditionalListings = () => {
-  const alreadySeeded = localStorage.getItem(SAMPLE_SEED_KEY_V2) === 'true'
-  if (alreadySeeded) return
-
-  const additionalListings = [
-    {
-      id: `listing-${Date.now()}-sample-6`,
-      address: '715 Cedar Pointe Way',
-      city: 'Charlotte',
-      state: 'NC',
-      zip: '28203',
-      country: 'USA',
-      beds: 4,
-      baths: 3,
-      sqft: 2480,
-      price: 648000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-7`,
-      address: '1042 Pine Summit Rd',
-      city: 'Phoenix',
-      state: 'AZ',
-      zip: '85018',
-      country: 'USA',
-      beds: 3,
-      baths: 2,
-      sqft: 1760,
-      price: 534000,
-      img1: '',
-      img2: '',
-      img3: ''
-    },
-    {
-      id: `listing-${Date.now()}-sample-8`,
-      address: '261 Lakeview Terrace',
-      city: 'Orlando',
-      state: 'FL',
-      zip: '32804',
-      country: 'USA',
-      beds: 5,
-      baths: 4,
-      sqft: 3290,
-      price: 925000,
-      img1: '',
-      img2: '',
-      img3: ''
-    }
-  ]
-
-  listings.value = [...additionalListings, ...listings.value]
-  saveListings()
-  localStorage.setItem(SAMPLE_SEED_KEY_V2, 'true')
-}
-
-const seedSampleImages = () => {
-  const alreadySeeded = localStorage.getItem(SAMPLE_IMAGES_SEED_KEY) === 'true'
-  if (alreadySeeded) return
-
-  const sampleImageUrls = [
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSLbTGWnADS-iYHrvrCjM5BmmJ4RIDr_mx0Xg&s',
-    'https://hips.hearstapps.com/hmg-prod/images/dutch-colonial-house-style-66956274903da.jpg?crop=1.00xw:0.671xh;0,0.131xh&resize=1120:*',
-    'https://saterdesign.com/cdn/shop/files/9024-Main-Image_1600x.jpg?v=1744743942',
-    'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
-    'https://cdn.houseplansservices.com/product/g8don8g8g04bdnb7mfss65rj62/w560x373.jpg?v=2'
-  ]
-
-  let imageIndex = 0
-  listings.value = listings.value.map((listing) => {
-    if (imageIndex >= sampleImageUrls.length) return listing
-    if (String(listing.img1 || '').trim()) return listing
-
-    const updatedListing = {
-      ...listing,
-      img1: sampleImageUrls[imageIndex]
-    }
-    imageIndex += 1
-    return updatedListing
-  })
-
-  saveListings()
-  localStorage.setItem(SAMPLE_IMAGES_SEED_KEY, 'true')
-}
-
-const seedMoreSampleImages = () => {
-  const alreadySeeded = localStorage.getItem(SAMPLE_IMAGES_SEED_KEY_V2) === 'true'
-  if (alreadySeeded) return
-
-  const additionalImageUrls = [
-    'https://www.houseplans.net/news/wp-content/uploads/2023/07/57260-768.jpeg',
-    'https://photos.zillowstatic.com/fp/a47d6bb7823d2a6b1b191185190d82f9-p_d.jpg',
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtUqEvZMIrG_qXkTjmccttegKRRx8o5sUtNQ&s'
-  ]
-
-  let imageIndex = 0
-  listings.value = listings.value.map((listing) => {
-    if (imageIndex >= additionalImageUrls.length) return listing
-    if (String(listing.img1 || '').trim()) return listing
-
-    const updatedListing = {
-      ...listing,
-      img1: additionalImageUrls[imageIndex]
-    }
-    imageIndex += 1
-    return updatedListing
-  })
-
-  saveListings()
-  localStorage.setItem(SAMPLE_IMAGES_SEED_KEY_V2, 'true')
-}
-
-const saveListings = () => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(listings.value))
 }
 
 const resetForm = () => {
@@ -825,8 +532,8 @@ const formatListingLabel = (listing) => {
   return [address, city, state, zip, normalizedCountry].filter(Boolean).join(', ')
 }
 
-onMounted(() => {
-  loadListings()
+onMounted(async () => {
+  await loadListings()
   applyListingMigrations()
   window.addEventListener('scroll', handleScroll, { passive: true })
 })

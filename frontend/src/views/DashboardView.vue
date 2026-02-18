@@ -1,5 +1,6 @@
 <template>
-  <section class="dashboard-page">
+  <main>
+    <section class="dashboard-page">
     <div class="dashboard-content">
       <div class="dashboard-hero">
         <p class="welcome-label">Dashboard</p>
@@ -54,6 +55,7 @@
       </div>
     </div>
   </section>
+  </main>
 </template>
 
 <script setup>

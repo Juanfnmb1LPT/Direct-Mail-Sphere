@@ -51,7 +51,9 @@ const defaultStore = {
                 mlsNumber: 'MLS123456',
                 agentPhoto: 'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg',
                 companyLogo: ''
-            }
+            },
+            listings: [],
+            orderHistory: []
         }
     ]
 }
@@ -91,6 +93,12 @@ const findUserByLogin = (login) =>
     )
 
 const getPrimaryUser = () => store.users[0]
+
+const getUserByHeader = (req) => {
+    const userId = req.headers['x-user-id']
+    if (!userId) return getPrimaryUser()
+    return store.users.find((user) => user.id === userId)
+}
 
 const pruneExpiredResetTokens = () => {
     const now = Date.now()
@@ -212,7 +220,9 @@ app.post('/api/signup', async (req, res) => {
             mlsNumber: '',
             agentPhoto: '',
             companyLogo: ''
-        }
+        },
+        listings: [],
+        orderHistory: []
     }
 
     store.users.push(newUser)
@@ -419,7 +429,7 @@ app.post('/api/reset-password', async (req, res) => {
 })
 
 app.get('/api/profile', (req, res) => {
-    const user = getPrimaryUser()
+    const user = getUserByHeader(req)
     if (!user) {
         return res.status(404).json({ success: false, message: 'Profile not found.' })
     }
@@ -428,7 +438,7 @@ app.get('/api/profile', (req, res) => {
 })
 
 app.put('/api/profile', async (req, res) => {
-    const user = getPrimaryUser()
+    const user = getUserByHeader(req)
     if (!user) {
         return res.status(404).json({ success: false, message: 'Profile not found.' })
     }
@@ -527,6 +537,170 @@ app.post('/api/send-csv', async (req, res) => {
             message: error?.message || 'Unable to send CSV email.'
         })
     }
+})
+
+app.get('/api/listings', (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    return res.json({ success: true, listings: user.listings || [] })
+})
+
+app.post('/api/listings', async (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    const incoming = req.body?.listings || []
+    if (!Array.isArray(incoming)) {
+        return res.status(400).json({ success: false, message: 'Listings must be an array.' })
+    }
+
+    if (!user.listings) {
+        user.listings = []
+    }
+
+    // Replace all listings with new ones, ensuring each has a userId
+    user.listings = incoming.map((listing) => ({
+        ...listing,
+        userId: user.id
+    }))
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to save listings.' })
+    }
+
+    return res.json({ success: true, listings: user.listings })
+})
+
+app.put('/api/listings/:id', async (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    const { id } = req.params
+    const updates = req.body || {}
+
+    if (!user.listings) {
+        user.listings = []
+    }
+
+    const index = user.listings.findIndex((l) => l.id === id && l.userId === user.id)
+    if (index === -1) {
+        return res.status(404).json({ success: false, message: 'Listing not found.' })
+    }
+
+    user.listings[index] = { ...user.listings[index], ...updates, userId: user.id }
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to update listing.' })
+    }
+
+    return res.json({ success: true, listing: user.listings[index] })
+})
+
+app.delete('/api/listings/:id', async (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    const { id } = req.params
+
+    if (!user.listings) {
+        user.listings = []
+    }
+
+    const index = user.listings.findIndex((l) => l.id === id && l.userId === user.id)
+    if (index === -1) {
+        return res.status(404).json({ success: false, message: 'Listing not found.' })
+    }
+
+    user.listings.splice(index, 1)
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to delete listing.' })
+    }
+
+    return res.json({ success: true })
+})
+
+app.get('/api/order-history', (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    return res.json({ success: true, orderHistory: user.orderHistory || [] })
+})
+
+app.post('/api/order-history', async (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    const incoming = req.body?.orderHistory || []
+    if (!Array.isArray(incoming)) {
+        return res.status(400).json({ success: false, message: 'Order history must be an array.' })
+    }
+
+    if (!user.orderHistory) {
+        user.orderHistory = []
+    }
+
+    // Replace all orders with new ones, ensuring each has a userId
+    user.orderHistory = incoming.map((order) => ({
+        ...order,
+        userId: user.id
+    }))
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to save order history.' })
+    }
+
+    return res.json({ success: true, orderHistory: user.orderHistory })
+})
+
+app.put('/api/order-history/:id', async (req, res) => {
+    const user = getUserByHeader(req)
+    if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found.' })
+    }
+
+    const { id } = req.params
+    const updates = req.body || {}
+
+    if (!user.orderHistory) {
+        user.orderHistory = []
+    }
+
+    const index = user.orderHistory.findIndex((o) => o.id === id && o.userId === user.id)
+    if (index === -1) {
+        return res.status(404).json({ success: false, message: 'Order not found.' })
+    }
+
+    user.orderHistory[index] = { ...user.orderHistory[index], ...updates, userId: user.id }
+
+    try {
+        await saveStore()
+    } catch (error) {
+        return res.status(500).json({ success: false, message: 'Unable to update order.' })
+    }
+
+    return res.json({ success: true, order: user.orderHistory[index] })
 })
 
 const startServer = async () => {

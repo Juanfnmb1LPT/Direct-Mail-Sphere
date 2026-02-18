@@ -17,7 +17,8 @@
         </button>
       </div>
     </nav>
-    <div class="login-shell">
+    <main>
+      <div class="login-shell">
       <div class="login-panel">
         <h2 class="panel-title">Sign in</h2>
         <form @submit.prevent="handleLogin">
@@ -111,6 +112,7 @@
         </div>
       </div>
     </div>
+    </main>
 
     <div v-if="showResetModal" class="modal-backdrop">
       <form class="modal-card" @submit.prevent="sendResetEmail">

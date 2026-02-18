@@ -1,5 +1,6 @@
 <template>
-  <div class="payment-container">
+  <main>
+    <div class="payment-container">
     <div class="payment-shell">
       <button type="button" class="back-button" @click="goBackToForm">
         <span aria-hidden="true">←</span>
@@ -96,7 +97,8 @@
 
       <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
     </div>
-  </div>
+    </div>
+  </main>
 </template>
 
 <script setup>

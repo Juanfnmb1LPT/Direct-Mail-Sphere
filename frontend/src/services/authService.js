@@ -1,4 +1,4 @@
-import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY } from './profileDefaults'
+import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY, CURRENT_USER_KEY } from './profileDefaults'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -6,6 +6,18 @@ const cacheProfile = (profile) => {
     try {
         localStorage.setItem(PROFILE_KEY, JSON.stringify(normalizeProfile(profile)))
         notifyProfileUpdated()
+    } catch (error) {
+        // Ignore storage errors.
+    }
+}
+
+const cacheCurrentUser = (userId) => {
+    try {
+        if (userId) {
+            localStorage.setItem(CURRENT_USER_KEY, userId)
+        } else {
+            localStorage.removeItem(CURRENT_USER_KEY)
+        }
     } catch (error) {
         // Ignore storage errors.
     }
@@ -29,6 +41,7 @@ export const authService = {
 
         const data = await response.json()
         cacheProfile(data?.profile)
+        cacheCurrentUser(data?.user?.id)
         return data
     },
     async signup(firstName, lastName, email, phone, password) {

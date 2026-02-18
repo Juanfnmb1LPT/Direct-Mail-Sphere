@@ -1,5 +1,6 @@
 <template>
-  <div class="profile-container">
+  <main>
+    <div class="profile-container">
     <div class="profile-layout">
       <div class="profile-header">
         <img
@@ -126,6 +127,7 @@
       </form>
     </div>
   </div>
+  </main>
 </template>
 
 <script setup>

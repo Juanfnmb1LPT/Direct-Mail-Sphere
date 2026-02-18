@@ -32,6 +32,7 @@
       </div>
     </nav>
 
+    <main>
     <!-- About Platform Section -->
     <section class="about-section">
       <div class="about-container">
@@ -159,6 +160,7 @@
         </div>
       </div>
     </section>
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
