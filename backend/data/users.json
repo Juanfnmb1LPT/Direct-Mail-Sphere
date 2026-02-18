@@ -3,7 +3,7 @@
     {
       "id": "user-1",
       "username": "test",
-      "password": "Nabc123!",
+      "password": "test123",
       "profile": {
         "firstName": "Niklas",
         "lastName": "Edstrom",
