@@ -18,6 +18,9 @@
         <button type="button" class="primary-button" @click="openCreate">
           Add new listing
         </button>
+        <button type="button" class="secondary-button" @click="generateRandomListings" title="Generate 20 random test listings">
+          Generate test data
+        </button>
       </div>
 
       <div class="listings-list">
@@ -422,6 +425,42 @@ const closeModal = () => {
   resetForm()
 }
 
+const generateRandomListings = async () => {
+  const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose']
+  const states = ['NY', 'CA', 'IL', 'TX', 'AZ', 'PA', 'TX', 'CA', 'TX', 'CA']
+  const streets = ['Oak Street', 'Maple Avenue', 'Elm Road', 'Cedar Lane', 'Pine Drive', 'Birch Court', 'Willow Way', 'Cherry Circle', 'Ash Boulevard', 'Spruce Place']
+  
+  const newListings = []
+  for (let i = 0; i < 20; i++) {
+    const cityIdx = Math.floor(Math.random() * cities.length)
+    const price = Math.floor(Math.random() * 900000) + 100000
+    const beds = Math.floor(Math.random() * 5) + 1
+    const baths = Math.floor(Math.random() * 3) + 1
+    const sqft = Math.floor(Math.random() * 3000) + 1000
+    
+    newListings.push({
+      id: `listing-${Date.now()}-${i}`,
+      address: `${Math.floor(Math.random() * 9000) + 1000} ${streets[Math.floor(Math.random() * streets.length)]}`,
+      city: cities[cityIdx],
+      state: states[cityIdx],
+      zip: String(Math.floor(Math.random() * 90000) + 10000),
+      country: 'USA',
+      beds: String(beds),
+      baths: String(baths),
+      sqft: String(sqft),
+      price: String(price),
+      img1: 'https://images.unsplash.com/photo-1570129477492-45a003537e1f?w=400&h=300&fit=crop',
+      img2: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
+      img3: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
+      userId: getCurrentUserId()
+    })
+  }
+  
+  listings.value = [...listings.value, ...newListings]
+  await saveListings()
+  alert('Added 20 random test listings!')
+}
+
 const handleSubmit = () => {
   const normalizedCountryRaw = String(form.value.country || '').trim()
   const normalizedCountry = normalizedCountryRaw.toUpperCase() === 'US' ? 'USA' : (normalizedCountryRaw || 'USA')
@@ -730,6 +769,23 @@ onBeforeUnmount(() => {
 .ghost-button:hover {
   border-color: #5281ff;
   color: #0b1630;
+}
+
+.secondary-button {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #f0f0f0;
+  color: #333;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.secondary-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+  background: #e0e0e0;
 }
 
 .listings-grid {
