@@ -1,0 +1,764 @@
+<template>
+  <div class="signup-page">
+    <nav class="signup-navbar">
+      <div class="signup-nav-container">
+        <div class="signup-brand">
+          <h1 class="signup-brand-title">DIRECT MAIL SPHERE</h1>
+          <div class="signup-brand-underline"></div>
+          <p class="signup-brand-subtitle">
+            Direct mail marketing with modern automation.
+          </p>
+          <p class="signup-brand-description">
+            Create an account to launch your next campaign.
+          </p>
+        </div>
+        <button type="button" class="signup-home-link" @click="goToHome">
+          Home
+        </button>
+      </div>
+    </nav>
+    <div class="signup-shell">
+      <div class="signup-panel">
+        <h2 class="panel-title">Create account</h2>
+        <form @submit.prevent="handleSignup">
+        <div class="two-column">
+          <div class="form-group">
+            <label for="first-name">First name</label>
+            <input
+              id="first-name"
+              v-model.trim="firstName"
+              type="text"
+              autocomplete="given-name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label for="last-name">Last name</label>
+            <input
+              id="last-name"
+              v-model.trim="lastName"
+              type="text"
+              autocomplete="family-name"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            v-model.trim="email"
+            type="email"
+            autocomplete="email"
+            required
+          />
+          <p v-if="email && !emailValid" class="helper-text">
+            Enter a valid email address.
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Phone number</label>
+          <input
+            id="phone"
+            v-model="phone"
+            type="tel"
+            autocomplete="tel"
+            placeholder="555-555-5555"
+            inputmode="numeric"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              @click="showPassword = !showPassword"
+              :title="showPassword ? 'Hide password' : 'Show password'"
+            >
+              <svg
+                v-if="showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                ></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="strength-row">
+            <span class="strength-label">Strength:</span>
+            <span :class="['strength-value', strengthClass]">{{ strengthLabel }}</span>
+          </div>
+          <ul class="strength-list">
+            <li :class="{ met: passwordRules.length }">
+              <span class="requirement-box" aria-hidden="true"></span>
+              At least 8 characters
+            </li>
+            <li :class="{ met: passwordRules.upper }">
+              <span class="requirement-box" aria-hidden="true"></span>
+              One uppercase letter
+            </li>
+            <li :class="{ met: passwordRules.lower }">
+              <span class="requirement-box" aria-hidden="true"></span>
+              One lowercase letter
+            </li>
+            <li :class="{ met: passwordRules.number }">
+              <span class="requirement-box" aria-hidden="true"></span>
+              One number
+            </li>
+            <li :class="{ met: passwordRules.special }">
+              <span class="requirement-box" aria-hidden="true"></span>
+              One special character
+            </li>
+          </ul>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-password">Re-enter password</label>
+          <div class="password-field">
+            <input
+              id="confirm-password"
+              v-model="confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              @click="showConfirmPassword = !showConfirmPassword"
+              :title="showConfirmPassword ? 'Hide password' : 'Show password'"
+            >
+              <svg
+                v-if="showConfirmPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"
+                ></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <p v-if="confirmPassword && !passwordsMatch" class="helper-text">
+            Passwords do not match.
+          </p>
+        </div>
+
+        <div v-if="error" class="error-message">{{ error }}</div>
+        <div v-if="success" class="success-message">
+          Account created! Please check your email to verify your account before logging in.
+        </div>
+
+        <label class="terms-row">
+          <input
+            v-model="acceptedTerms"
+            type="checkbox"
+            name="accept-terms"
+            required
+          />
+          <span>I accept the terms and conditions.</span>
+        </label>
+
+          <button type="submit" class="primary-button" :disabled="!canSubmit">
+            Create account
+          </button>
+
+          <div class="secondary-actions">
+            <button type="button" class="secondary-button" @click="goToLogin">
+              Already have an account?
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { authService } from '../services/authService'
+
+const router = useRouter()
+
+const firstName = ref('')
+const lastName = ref('')
+const email = ref('')
+const phone = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+const error = ref('')
+const success = ref(false)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const acceptedTerms = ref(false)
+
+const formatFirstName = (value) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+
+const formatLastName = (value) =>
+  value
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ')
+
+const formatPhone = (value) => {
+  const digits = value.replace(/\D/g, '').slice(0, 10)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
+watch(firstName, (value, prev) => {
+  const formatted = formatFirstName(value)
+  if (formatted !== value) firstName.value = formatted
+})
+
+watch(lastName, (value) => {
+  const formatted = formatLastName(value)
+  if (formatted !== value) lastName.value = formatted
+})
+
+watch(phone, (value) => {
+  const formatted = formatPhone(value)
+  if (formatted !== value) phone.value = formatted
+})
+
+const emailValid = computed(() =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)
+)
+
+const passwordRules = computed(() => ({
+  length: password.value.length >= 8,
+  upper: /[A-Z]/.test(password.value),
+  lower: /[a-z]/.test(password.value),
+  number: /[0-9]/.test(password.value),
+  special: /[^A-Za-z0-9]/.test(password.value)
+}))
+
+const strengthScore = computed(() =>
+  Object.values(passwordRules.value).filter(Boolean).length
+)
+
+const strengthLabel = computed(() => {
+  if (strengthScore.value <= 2) return 'Weak'
+  if (strengthScore.value === 3 || strengthScore.value === 4) return 'Medium'
+  return 'Strong'
+})
+
+const strengthClass = computed(() => {
+  if (strengthScore.value <= 2) return 'weak'
+  if (strengthScore.value === 3 || strengthScore.value === 4) return 'medium'
+  return 'strong'
+})
+
+const passwordsMatch = computed(() => password.value === confirmPassword.value)
+
+const isStrong = computed(() =>
+  Object.values(passwordRules.value).every(Boolean)
+)
+
+const canSubmit = computed(() =>
+  firstName.value &&
+    lastName.value &&
+    email.value &&
+    phone.value &&
+    password.value &&
+    confirmPassword.value &&
+    passwordsMatch.value &&
+    isStrong.value &&
+    emailValid.value &&
+    acceptedTerms.value
+)
+
+const handleSignup = async () => {
+  error.value = ''
+  success.value = false
+
+  if (!isStrong.value) {
+    error.value = 'Password is not strong enough.'
+    return
+  }
+
+  if (!passwordsMatch.value) {
+    error.value = 'Passwords do not match.'
+    return
+  }
+
+  if (!acceptedTerms.value) {
+    error.value = 'You must accept the terms and conditions.'
+    return
+  }
+
+  const result = await authService.signup(
+    firstName.value,
+    lastName.value,
+    email.value,
+    phone.value,
+    password.value
+  )
+
+  if (!result.success) {
+    error.value = result.message || 'Signup failed. Please try again.'
+    return
+  }
+
+  success.value = true
+}
+
+const goToLogin = () => {
+  router.push('/login')
+}
+
+const goToHome = () => {
+  router.push('/')
+}
+</script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+.signup-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding-bottom: clamp(2rem, 4vw, 3rem);
+  background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --dms-text-muted: #0b1630;
+  --dms-border-soft: rgba(11, 22, 48, 0.35);
+}
+
+.signup-navbar {
+  background: linear-gradient(180deg, #0f1f3d 0%, #0b1630 100%);
+  border: none;
+  padding: 0;
+  box-shadow: 0 8px 24px rgba(11, 22, 48, 0.22);
+  position: relative;
+  margin: 20px 24px 0;
+  border-radius: 16px;
+  z-index: 1;
+}
+
+.signup-nav-container {
+  width: 100%;
+  margin: 0;
+  padding: 28px 32px 34px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 260px;
+  position: relative;
+}
+
+.signup-brand {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.signup-brand-title {
+  font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  font-size: clamp(2rem, 4.6vw, 3.4rem);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.signup-brand-underline {
+  width: min(320px, 62vw);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  margin: 6px auto 0;
+}
+
+.signup-brand-subtitle {
+  margin: 8px 0 0;
+  max-width: 680px;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.4;
+}
+
+.signup-brand-description {
+  margin: 0;
+  max-width: 640px;
+  font-size: 14px;
+  color: rgba(226, 236, 255, 0.95);
+  line-height: 1.6;
+}
+
+.signup-home-link {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+}
+
+.signup-home-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.signup-shell {
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: clamp(2rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) 0;
+  margin: 0 auto;
+}
+
+.signup-panel {
+  background: #ffffff;
+  border: 1px solid #e0e7ff;
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(61, 90, 255, 0.18);
+  padding: clamp(2rem, 5vw, 3rem);
+}
+
+.panel-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0f1f3d;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.form-group {
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: clamp(0.5rem, 2vw, 0.75rem);
+  color: #0f1f3d;
+  font-weight: 600;
+  font-size: clamp(0.85rem, 2.5vw, 0.95rem);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: clamp(10px, 2vw, 14px);
+  border: 2px solid #d0d8ee;
+  border-radius: 10px;
+  font-size: clamp(0.9rem, 2.5vw, 0.95rem);
+  background-color: #f8f9ff;
+  color: #0f1f3d;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3d5aff;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(61, 90, 255, 0.12);
+}
+
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #5b6b8f;
+  transition: color 0.3s ease;
+}
+
+.toggle-password:hover {
+  color: #3d5aff;
+}
+
+.toggle-password svg {
+  width: 18px;
+  height: 18px;
+}
+
+.strength-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  color: #5b6b8f;
+  font-size: 0.85rem;
+}
+
+.strength-value {
+  font-weight: 700;
+}
+
+.strength-value.weak {
+  color: #ff8a80;
+}
+
+.strength-value.medium {
+  color: #f5c26b;
+}
+
+.strength-value.strong {
+  color: #7dffa5;
+}
+
+.strength-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #5b6b8f;
+  font-size: 0.85rem;
+  display: grid;
+  gap: 6px;
+}
+
+.strength-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.requirement-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(91, 107, 143, 0.6);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+}
+
+.strength-list li.met .requirement-box::after {
+  content: '✓';
+  color: #0b1630;
+  background: #7dffa5;
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+.strength-list li.met {
+  color: #7dffa5;
+}
+
+.helper-text {
+  margin-top: 8px;
+  color: #d14646;
+  font-size: 0.85rem;
+}
+
+.error-message {
+  color: #ff8a80;
+  margin-bottom: clamp(0.75rem, 2.5vw, 1rem);
+  padding: clamp(10px, 2vw, 12px);
+  background: linear-gradient(135deg, rgba(255, 59, 48, 0.12), rgba(255, 107, 107, 0.08));
+  border: 1.5px solid rgba(255, 107, 107, 0.4);
+  border-radius: 10px;
+  text-align: center;
+  font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+  font-weight: 500;
+}
+
+.success-message {
+  color: #7dffa5;
+  margin-bottom: clamp(0.75rem, 2.5vw, 1rem);
+  padding: clamp(10px, 2vw, 12px);
+  background: rgba(64, 255, 144, 0.12);
+  border: 1.5px solid rgba(64, 255, 144, 0.3);
+  border-radius: 10px;
+  text-align: center;
+  font-size: clamp(0.85rem, 2.5vw, 0.9rem);
+  font-weight: 600;
+}
+
+.primary-button {
+  width: 100%;
+  padding: clamp(12px, 2vw, 14px);
+  background: linear-gradient(135deg, #3d5aff 0%, #5281ff 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(82, 129, 255, 0.3);
+  letter-spacing: 0.3px;
+  margin-top: clamp(0.5rem, 2vw, 1rem);
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6a94ff, #5281ff);
+  box-shadow: 0 12px 28px rgba(82, 129, 255, 0.45);
+  transform: translateY(-2px);
+}
+
+.terms-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: clamp(0.75rem, 2.5vw, 1rem) 0 0;
+  color: #0f1f3d;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.terms-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: #3d5aff;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #0b1630;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color 0.3s ease;
+  text-align: left;
+}
+
+.link-button:hover {
+  color: #0f1f3d;
+}
+
+.secondary-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: stretch;
+}
+
+.secondary-button {
+  width: 100%;
+  padding: clamp(12px, 2vw, 14px);
+  background: #ffffff;
+  color: #0f1f3d;
+  border: 2px solid #d0d8ee;
+  border-radius: 10px;
+  font-size: clamp(0.9rem, 2.5vw, 1rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+}
+
+.secondary-button:hover {
+  border-color: #3d5aff;
+  background: #f8f9ff;
+}
+</style>
