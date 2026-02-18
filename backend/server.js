@@ -34,7 +34,7 @@ const userResetTokens = new Map()
 const verifyTokens = new Map()
 const userVerifyTokens = new Map()
 
-let store = { users: [] }
+let store = { users: [], listings: [] }
 
 const defaultStore = {
     users: [
@@ -52,10 +52,36 @@ const defaultStore = {
                 agentPhoto: 'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg',
                 companyLogo: ''
             },
-            listings: [],
             orderHistory: []
         }
-    ]
+    ],
+    listings: []
+}
+
+const normalizeUsers = (users = []) =>
+    users.map((user) => {
+        const { listings, ...rest } = user || {}
+        return { ...rest, listings: [] }
+    })
+
+const normalizeListings = (listings = [], users = []) => {
+    const validUserIds = new Set(users.map((user) => user.id))
+    return listings
+        .filter((listing) => listing && listing.userId && validUserIds.has(listing.userId))
+        .map((listing) => ({ ...listing }))
+}
+
+const getListingsForUser = (userId) =>
+    (store.listings || []).filter((listing) => listing.userId === userId)
+
+const setListingsForUser = (userId, incomingListings = []) => {
+    const otherUsersListings = (store.listings || []).filter((listing) => listing.userId !== userId)
+    const nextUserListings = incomingListings.map((listing) => ({
+        ...listing,
+        userId
+    }))
+    store.listings = [...otherUsersListings, ...nextUserListings]
+    return nextUserListings
 }
 
 const loadStore = async () => {
@@ -75,7 +101,22 @@ const loadStore = async () => {
             return
         }
 
-        store = parsed
+        const users = normalizeUsers(parsed.users)
+        const legacyListings = parsed.users.flatMap((user) =>
+            (user?.listings || []).map((listing) => ({
+                ...listing,
+                userId: listing?.userId || user.id
+            }))
+        )
+
+        const sourceListings = Array.isArray(parsed.listings) ? parsed.listings : legacyListings
+        const listings = normalizeListings(sourceListings, users)
+
+        store = {
+            ...parsed,
+            users,
+            listings
+        }
     } catch (error) {
         store = defaultStore
     }
@@ -221,7 +262,6 @@ app.post('/api/signup', async (req, res) => {
             agentPhoto: '',
             companyLogo: ''
         },
-        listings: [],
         orderHistory: []
     }
 
@@ -545,7 +585,7 @@ app.get('/api/listings', (req, res) => {
         return res.status(404).json({ success: false, message: 'User not found.' })
     }
 
-    return res.json({ success: true, listings: user.listings || [] })
+    return res.json({ success: true, listings: getListingsForUser(user.id) })
 })
 
 app.post('/api/listings', async (req, res) => {
@@ -559,15 +599,7 @@ app.post('/api/listings', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Listings must be an array.' })
     }
 
-    if (!user.listings) {
-        user.listings = []
-    }
-
-    // Replace all listings with new ones, ensuring each has a userId
-    user.listings = incoming.map((listing) => ({
-        ...listing,
-        userId: user.id
-    }))
+    const nextListings = setListingsForUser(user.id, incoming)
 
     try {
         await saveStore()
@@ -575,7 +607,7 @@ app.post('/api/listings', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Unable to save listings.' })
     }
 
-    return res.json({ success: true, listings: user.listings })
+    return res.json({ success: true, listings: nextListings })
 })
 
 app.put('/api/listings/:id', async (req, res) => {
@@ -587,16 +619,12 @@ app.put('/api/listings/:id', async (req, res) => {
     const { id } = req.params
     const updates = req.body || {}
 
-    if (!user.listings) {
-        user.listings = []
-    }
-
-    const index = user.listings.findIndex((l) => l.id === id && l.userId === user.id)
+    const index = (store.listings || []).findIndex((l) => l.id === id && l.userId === user.id)
     if (index === -1) {
         return res.status(404).json({ success: false, message: 'Listing not found.' })
     }
 
-    user.listings[index] = { ...user.listings[index], ...updates, userId: user.id }
+    store.listings[index] = { ...store.listings[index], ...updates, userId: user.id }
 
     try {
         await saveStore()
@@ -604,7 +632,7 @@ app.put('/api/listings/:id', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Unable to update listing.' })
     }
 
-    return res.json({ success: true, listing: user.listings[index] })
+    return res.json({ success: true, listing: store.listings[index] })
 })
 
 app.delete('/api/listings/:id', async (req, res) => {
@@ -615,16 +643,12 @@ app.delete('/api/listings/:id', async (req, res) => {
 
     const { id } = req.params
 
-    if (!user.listings) {
-        user.listings = []
-    }
-
-    const index = user.listings.findIndex((l) => l.id === id && l.userId === user.id)
+    const index = (store.listings || []).findIndex((l) => l.id === id && l.userId === user.id)
     if (index === -1) {
         return res.status(404).json({ success: false, message: 'Listing not found.' })
     }
 
-    user.listings.splice(index, 1)
+    store.listings.splice(index, 1)
 
     try {
         await saveStore()
