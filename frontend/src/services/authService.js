@@ -31,6 +31,24 @@ export const authService = {
         cacheProfile(data?.profile)
         return data
     },
+    async signup(firstName, lastName, email, phone, password) {
+        const response = await fetch(`${API_BASE}/api/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firstName, lastName, email, phone, password })
+        })
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}))
+            return {
+                success: false,
+                message: errorBody?.message || 'Signup failed'
+            }
+        }
+
+        const data = await response.json()
+        return data
+    },
     async requestPasswordReset(email) {
         const response = await fetch(`${API_BASE}/api/forgot-password`, {
             method: 'POST',
@@ -43,6 +61,23 @@ export const authService = {
             return {
                 success: false,
                 message: errorBody?.message || 'Password reminder failed'
+            }
+        }
+
+        return response.json().catch(() => ({ success: true }))
+    },
+    async verifyEmail(token) {
+        const response = await fetch(`${API_BASE}/api/verify-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token })
+        })
+
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({}))
+            return {
+                success: false,
+                message: errorBody?.message || 'Email verification failed'
             }
         }
 

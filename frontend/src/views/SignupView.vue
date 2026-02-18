@@ -197,7 +197,9 @@
         </div>
 
         <div v-if="error" class="error-message">{{ error }}</div>
-        <div v-if="success" class="success-message">Account created. Please log in.</div>
+        <div v-if="success" class="success-message">
+          Account created! Please check your email to verify your account before logging in.
+        </div>
 
         <label class="terms-row">
           <input
@@ -228,6 +230,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { authService } from '../services/authService'
 
 const router = useRouter()
 
@@ -330,7 +333,7 @@ const canSubmit = computed(() =>
     acceptedTerms.value
 )
 
-const handleSignup = () => {
+const handleSignup = async () => {
   error.value = ''
   success.value = false
 
@@ -346,6 +349,19 @@ const handleSignup = () => {
 
   if (!acceptedTerms.value) {
     error.value = 'You must accept the terms and conditions.'
+    return
+  }
+
+  const result = await authService.signup(
+    firstName.value,
+    lastName.value,
+    email.value,
+    phone.value,
+    password.value
+  )
+
+  if (!result.success) {
+    error.value = result.message || 'Signup failed. Please try again.'
     return
   }
 

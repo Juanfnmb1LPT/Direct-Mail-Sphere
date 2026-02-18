@@ -3,6 +3,7 @@ import LandingPageView from '../views/LandingPageView.vue'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignupView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
+import VerifyEmailView from '../views/VerifyEmailView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import HouseMapView from '../views/HouseMapView.vue'
 import CreateMailView from '../views/CreateMailView.vue'
@@ -19,6 +20,7 @@ const routes = [
     { path: '/login', name: 'login', component: LoginView, meta: { title: 'Login' } },
     { path: '/signup', name: 'signup', component: SignupView, meta: { title: 'Sign Up' } },
     { path: '/reset-password', name: 'reset-password', component: ResetPasswordView, meta: { title: 'Reset Password' } },
+    { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { title: 'Verify Email' } },
     { path: '/dashboard', name: 'dashboard', component: DashboardView, meta: { title: 'Dashboard' } },
     { path: '/profile', name: 'profile', component: UpdateProfileView, meta: { title: 'Update Profile' } },
     { path: '/orders', name: 'orders', component: OrderHistoryView, meta: { title: 'Order History' } },
