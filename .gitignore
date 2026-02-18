@@ -13,6 +13,9 @@ build/
 .env.*.local
 env/
 
+# Local data
+backend/data/users.json
+
 # IDE
 .vscode/
 .idea/
