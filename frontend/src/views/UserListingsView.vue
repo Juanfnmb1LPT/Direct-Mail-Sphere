@@ -18,7 +18,7 @@
         <button type="button" class="primary-button" @click="openCreate">
           Add new listing
         </button>
-        <button type="button" class="secondary-button" @click="generateRandomListings" title="Generate 20 random test listings">
+        <button type="button" class="secondary-button generate-button" @click="generateRandomListings" title="Generate 20 random test listings">
           Generate test data
         </button>
       </div>
@@ -53,6 +53,20 @@
               <div class="listing-actions">
                 <button type="button" class="edit-button" @click="startEdit(listing)">
                   Edit
+                </button>
+                <button
+                  type="button"
+                  class="delete-icon-button"
+                  :aria-label="`Delete listing at ${listing.address || 'address'}`"
+                  title="Delete listing"
+                  @click="openDeleteConfirm(listing.id)"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" class="delete-icon-svg">
+                    <path
+                      d="M9 3.75A2.25 2.25 0 0 0 6.75 6v.75H4.5a.75.75 0 0 0 0 1.5h.78l.85 10.18A2.25 2.25 0 0 0 8.38 20.5h7.24a2.25 2.25 0 0 0 2.25-2.07l.85-10.18h.78a.75.75 0 0 0 0-1.5h-2.25V6A2.25 2.25 0 0 0 15 3.75H9Zm6.75 3H8.25V6A.75.75 0 0 1 9 5.25h6a.75.75 0 0 1 .75.75v.75Zm-6 3a.75.75 0 0 1 .75.75v6a.75.75 0 0 1-1.5 0v-6a.75.75 0 0 1 .75-.75Zm4.5.75a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Z"
+                      fill="currentColor"
+                    />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -231,12 +245,32 @@
         </form>
       </div>
     </div>
+
+    <div v-if="showDeleteModal" class="listings-modal-backdrop" @click="closeDeleteConfirm">
+      <div
+        ref="deleteDialogRef"
+        class="delete-modal-card"
+        role="dialog"
+        aria-modal="true"
+        tabindex="-1"
+        @click.stop
+      >
+        <h3>Delete listing</h3>
+        <p>
+          Do you want to delete the listing located in {{ deleteTargetAddress }}?
+        </p>
+        <div class="delete-modal-actions">
+          <button type="button" class="ghost-button" @click="closeDeleteConfirm">Cancel</button>
+          <button type="button" class="primary-button" @click="confirmDelete">Confirm</button>
+        </div>
+      </div>
+    </div>
   </div>
   </main>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getCurrentUserId } from '../services/profileDefaults'
 
 const API_BASE = 'http://localhost:3001'
@@ -251,6 +285,28 @@ const birchUpdatedImage =
   'https://assets.architecturaldesigns.com/cdn-cgi/image/width=3840,quality=75,format=auto,slow-connection-quality=50/plan_assets/325000035/original/290101IY_01_1693600745.jpg'
 const cedarUpdatedImage =
   'https://hips.hearstapps.com/hmg-prod/images/imagereader-3-1550604185.jpg'
+const mockHouseImages = [
+  'https://assets.architecturaldesigns.com/cdn-cgi/image/width=3840,quality=75,format=auto,slow-connection-quality=50/plan_assets/325000035/original/290101IY_01_1693600745.jpg',
+  'https://www.redfin.com/blog/wp-content/uploads/2024/02/9323-Shearwater-Cir-Discovery-Bay-CA-94505-.jpeg',
+  'https://images.ctfassets.net/s4ybdu2ld1ox/27eoDwvIaqupfIPqxA5V2I/62db0f5d7a34c4c1c32487401e13f847/2_Story_Houses.jpg?w=1280&h=853&fl=progressive&q=70&fm=jpg&bg=transparent',
+  'https://cdn.home-designing.com/wp-content/uploads/2023/04/modern-houses.jpg',
+  'https://s.hdnux.com/photos/61/17/31/12908103/4/rawImage.jpg',
+  'https://www.bankrate.com/2021/02/11094329/Is_it_cheaper_to_build_or_buy_a_home.jpg?auto=webp&optimize=high&crop=16:9',
+  'https://www.investopedia.com/thmb/c2pREQexqYigUU6e6V5BdFxtZMI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-176745100-56484f037be245afb7bd3827e8e64f81.jpg',
+  'https://images.ctfassets.net/5cjznp8u1b6h/j18fCMjGHCA22wM0m66PJ/ac667abe16ee362edcf2edd62bf09127/austin_homes_-_Article_Header.png',
+  'https://hips.hearstapps.com/hmg-prod/images/shotgun-house-style-6699300a5af45.jpg?crop=0.952xw:0.958xh;0.0483xw,0.0365xh',
+  'https://lifehacker.com/imagery/articles/01HF2GK9X9XQVN8KBRQHR3NKK3/hero-image.fill.size_1248x702.v1699833273.jpg',
+  'https://www.lemonade.com/blog/wp-content/uploads/2021/12/shutterstock_667541251-scaled.jpg',
+  'https://www.realsimple.com/thmb/Nn1NYL8WG1GXFievbxMo-NzTaEQ=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/victorian-architecture-GettyImages-522659926-67f7319a300b47978a25a974bf82315a.jpg',
+  'https://www.dfdhouseplans.com/blog/wp-content/uploads/2023/06/22225-front-rendering.jpg',
+  'https://i.ytimg.com/vi/B56pik49Y5s/maxresdefault.jpg',
+  'https://www.mydomaine.com/thmb/NOLTPSEWH8GQhHr0LkaAbVtzSFQ=/3000x0/filters:no_upscale():strip_icc()/GettyImages-162528100-a545d283c989476fb7c3e898e3095306.jpg',
+  'https://images.contentstack.io/v3/assets/blte8e7d2bd4f946026/blt8e6814f93b07c94a/685ae4d96d774ba11dc13ce0/image4.webp',
+  'https://media-cldnry.s-nbcnews.com/image/upload/newscms/2019_24/1448814/how-size-doesnt-make-you-happier-today-main-190614.jpg',
+  'https://images.prismic.io/skylab/bb22bfa6383b5d83508ab6e8370158706f6c544b_skylab_hoke_18.jpg?auto=compress,format',
+  'https://image.cnbcfm.com/api/v1/image/106758801-1603459526384-picture-perfect-beautiful-house-on-the-island-of-coronado-in-sunny-california-beautifully-landscaped_t20_6lJOrv.jpg?v=1603459593&w=1920&h=1080',
+  'https://media.cnn.com/api/v1/images/stellar/prod/1804105883349055127.jpg?c=original'
+]
 
 const getAuthHeaders = () => {
   const userId = getCurrentUserId()
@@ -264,8 +320,11 @@ const getAuthHeaders = () => {
 const listings = ref([])
 const editingId = ref('')
 const showModal = ref(false)
+const showDeleteModal = ref(false)
 const searchQuery = ref('')
 const visibleCount = ref(ITEMS_PER_PAGE)
+const pendingDeleteId = ref('')
+const deleteDialogRef = ref(null)
 
 const emptyForm = () => ({
   address: '',
@@ -449,7 +508,7 @@ const generateRandomListings = async () => {
       baths: String(baths),
       sqft: String(sqft),
       price: String(price),
-      img1: 'https://images.unsplash.com/photo-1570129477492-45a003537e1f?w=400&h=300&fit=crop',
+      img1: mockHouseImages[Math.floor(Math.random() * mockHouseImages.length)],
       img2: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=300&fit=crop',
       img3: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
       userId: getCurrentUserId()
@@ -461,7 +520,7 @@ const generateRandomListings = async () => {
   alert('Added 20 random test listings!')
 }
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   const normalizedCountryRaw = String(form.value.country || '').trim()
   const normalizedCountry = normalizedCountryRaw.toUpperCase() === 'US' ? 'USA' : (normalizedCountryRaw || 'USA')
 
@@ -482,14 +541,36 @@ const handleSubmit = () => {
   }
 
   if (editingId.value) {
-    listings.value = listings.value.map((listing) =>
-      listing.id === editingId.value ? payload : listing
-    )
+    try {
+      const response = await fetch(`${API_BASE}/api/listings/${editingId.value}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        throw new Error('Unable to update listing.')
+      }
+
+      const data = await response.json()
+      const updatedListing = data?.listing || payload
+
+      listings.value = listings.value.map((listing) =>
+        listing.id === editingId.value ? updatedListing : listing
+      )
+
+      localStorage.setItem(getStorageKey(), JSON.stringify(listings.value))
+      closeModal()
+      return
+    } catch (error) {
+      alert('Unable to update listing right now. Please try again.')
+      return
+    }
   } else {
     listings.value = [payload, ...listings.value]
   }
 
-  saveListings()
+  await saveListings()
   closeModal()
 }
 
@@ -537,26 +618,59 @@ const normalizeUrlField = (fieldId) => {
   const raw = String(form.value[fieldId] || '').trim()
   if (!raw) return
   if (/^https?:\/\//i.test(raw)) {
-    const normalized = raw.replace(/^(https?:\/\/)(?!www\.)/i, '$1www.')
-    form.value[fieldId] = normalized
+    form.value[fieldId] = raw
     return
   }
-  if (/^www\./i.test(raw)) {
-    form.value[fieldId] = `https://${raw}`
+  if (/^\/\//.test(raw)) {
+    form.value[fieldId] = `https:${raw}`
     return
   }
-  form.value[fieldId] = `https://www.${raw}`
+  form.value[fieldId] = `https://${raw}`
 }
 
-const removeListing = (id) => {
-  const target = listings.value.find((listing) => listing.id === id)
-  const label = target ? `\n${formatListingLabel(target)}` : ''
-  if (!window.confirm(`Delete this listing?${label}`)) return
+const deleteTargetAddress = computed(() => {
+  if (!pendingDeleteId.value) return 'this address'
+  const target = listings.value.find((listing) => listing.id === pendingDeleteId.value)
+  return target?.address || 'this address'
+})
+
+const openDeleteConfirm = async (id) => {
+  pendingDeleteId.value = id
+  showDeleteModal.value = true
+  await nextTick()
+  deleteDialogRef.value?.focus()
+}
+
+const closeDeleteConfirm = () => {
+  showDeleteModal.value = false
+  pendingDeleteId.value = ''
+}
+
+const confirmDelete = async () => {
+  const id = pendingDeleteId.value
+  if (!id) return
+
+  try {
+    const response = await fetch(`${API_BASE}/api/listings/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to delete listing.')
+    }
+  } catch (error) {
+    alert('Unable to delete listing right now. Please try again.')
+    return
+  }
+
   listings.value = listings.value.filter((listing) => listing.id !== id)
   if (editingId.value === id) {
     closeModal()
   }
-  saveListings()
+
+  localStorage.setItem(getStorageKey(), JSON.stringify(listings.value))
+  closeDeleteConfirm()
 }
 
 const formatNumber = (value) => Number(value || 0).toLocaleString('en-US')
@@ -773,10 +887,10 @@ onBeforeUnmount(() => {
 
 .secondary-button {
   padding: 12px 16px;
-  border: none;
+  border: 1px solid rgba(15, 31, 61, 0.28);
   border-radius: 10px;
-  background: #f0f0f0;
-  color: #333;
+  background: #eaf2ff;
+  color: #000000;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -784,8 +898,12 @@ onBeforeUnmount(() => {
 
 .secondary-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
-  background: #e0e0e0;
+  box-shadow: 0 8px 16px rgba(82, 129, 255, 0.25);
+  background: #dce9ff;
+}
+
+.generate-button {
+  color: #2a4f78 !important;
 }
 
 .listings-grid {
@@ -797,6 +915,7 @@ onBeforeUnmount(() => {
 .listing-card {
   display: flex;
   flex-direction: column;
+  height: 100%;
   border-radius: 14px;
   border: 1px solid rgba(15, 31, 61, 0.18);
   background: #ffffff;
@@ -820,6 +939,7 @@ onBeforeUnmount(() => {
 }
 
 .listing-info {
+  flex: 1;
   padding: 14px 14px 10px;
 }
 
@@ -845,9 +965,12 @@ onBeforeUnmount(() => {
 }
 
 .listing-actions {
+  margin-top: auto;
   padding: 0 14px 14px;
   display: flex;
+  align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .edit-button {
@@ -866,6 +989,61 @@ onBeforeUnmount(() => {
 .edit-button:hover {
   background: linear-gradient(135deg, #6a94ff, #5281ff);
   transform: translateY(-1px);
+}
+
+.delete-icon-button {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #f87171;
+  line-height: 1;
+  padding: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-icon-button:hover {
+  color: #fb7185;
+  transform: translateY(calc(-50% - 1px));
+}
+
+.delete-icon-svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.delete-modal-card {
+  width: 100%;
+  max-width: 460px;
+  margin-top: 12vh;
+  background: linear-gradient(135deg, #ffffff 0%, #edf4ff 58%, #dbe8ff 100%);
+  border: 1px solid rgba(15, 31, 61, 0.2);
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 22px 48px rgba(11, 22, 48, 0.28);
+  color: #0b1630;
+}
+
+.delete-modal-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.delete-modal-card p {
+  margin: 0;
+  color: #264173;
+  line-height: 1.5;
+}
+
+.delete-modal-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .empty-state {
