@@ -670,6 +670,11 @@ watch(filteredOrders, (value) => {
   background: #ffffff;
 }
 
+.status-select option {
+  color: #0f1f3d;
+  background: #ffffff;
+}
+
 .status-select-placed {
   background: linear-gradient(135deg, #5281ff, #3b6cff);
   color: #ffffff;
