@@ -36,6 +36,13 @@ const userVerifyTokens = new Map()
 
 let store = { users: [], listings: [] }
 
+const USER_TYPES = new Set(['standard', 'admin'])
+
+const normalizeUserType = (value) => {
+    const normalized = String(value || '').toLowerCase().trim()
+    return USER_TYPES.has(normalized) ? normalized : 'standard'
+}
+
 const defaultStore = {
     users: [
         {
@@ -43,6 +50,7 @@ const defaultStore = {
             username: 'test',
             password: 'test123',
             emailVerified: true,
+            userType: 'standard',
             profile: {
                 firstName: 'Taylor',
                 lastName: 'Morgan',
@@ -50,6 +58,23 @@ const defaultStore = {
                 phone: '555-123-4567',
                 mlsNumber: 'MLS123456',
                 agentPhoto: 'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg',
+                companyLogo: ''
+            },
+            orderHistory: []
+        },
+        {
+            id: 'user-2',
+            username: 'admintest',
+            password: 'admintest123',
+            emailVerified: true,
+            userType: 'admin',
+            profile: {
+                firstName: 'Admin',
+                lastName: 'Test',
+                email: 'admintest@example.com',
+                phone: '555-987-6543',
+                mlsNumber: '',
+                agentPhoto: '',
                 companyLogo: ''
             },
             orderHistory: []
@@ -61,7 +86,11 @@ const defaultStore = {
 const normalizeUsers = (users = []) =>
     users.map((user) => {
         const { listings, ...rest } = user || {}
-        return { ...rest, listings: [] }
+        return {
+            ...rest,
+            userType: normalizeUserType(rest?.userType),
+            listings: []
+        }
     })
 
 const normalizeListings = (listings = [], users = []) => {
@@ -202,6 +231,16 @@ const validateProfile = (profile) => {
     return { ok: true }
 }
 
+const ORDER_STATUS_VALUES = new Set(['placed', 'in progress', 'issue', 'done', 'delivered'])
+
+const normalizeOrderStatus = (value) => {
+    const normalized = String(value || '').toLowerCase().trim()
+    if (normalized === 'done') {
+        return 'delivered'
+    }
+    return ORDER_STATUS_VALUES.has(normalized) ? normalized : 'placed'
+}
+
 app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json())
 
@@ -222,7 +261,7 @@ app.post('/api/login', (req, res) => {
         }
         return res.json({
             success: true,
-            user: { id: user.id, username: user.username },
+            user: { id: user.id, username: user.username, userType: normalizeUserType(user.userType) },
             profile: user.profile
         })
     }
@@ -253,6 +292,7 @@ app.post('/api/signup', async (req, res) => {
         username: cleanedEmail,
         password: cleanedPassword,
         emailVerified: false,
+        userType: 'standard',
         profile: {
             firstName: cleanedFirstName,
             lastName: cleanedLastName,
@@ -659,7 +699,13 @@ app.delete('/api/listings/:id', async (req, res) => {
     return res.json({ success: true })
 })
 
-app.get('/api/order-history', (req, res) => {
+app.get('/api/order-history', async (req, res) => {
+    try {
+        await loadStore()
+    } catch {
+        return res.status(500).json({ success: false, message: 'Unable to load order history.' })
+    }
+
     const user = getUserByHeader(req)
     if (!user) {
         return res.status(404).json({ success: false, message: 'User not found.' })
@@ -669,6 +715,12 @@ app.get('/api/order-history', (req, res) => {
 })
 
 app.post('/api/order-history', async (req, res) => {
+    try {
+        await loadStore()
+    } catch {
+        return res.status(500).json({ success: false, message: 'Unable to load order history.' })
+    }
+
     const user = getUserByHeader(req)
     if (!user) {
         return res.status(404).json({ success: false, message: 'User not found.' })
@@ -683,9 +735,17 @@ app.post('/api/order-history', async (req, res) => {
         user.orderHistory = []
     }
 
-    // Replace all orders with new ones, ensuring each has a userId
+    const existingStatusById = new Map(
+        user.orderHistory
+            .filter((order) => order && order.id)
+            .map((order) => [order.id, normalizeOrderStatus(order.status)])
+    )
+
+    // Replace all orders with new ones, ensuring each has a userId.
+    // Status is preserved for existing records and defaults to "placed" for new records.
     user.orderHistory = incoming.map((order) => ({
         ...order,
+        status: existingStatusById.get(order?.id) || 'placed',
         userId: user.id
     }))
 
@@ -699,6 +759,12 @@ app.post('/api/order-history', async (req, res) => {
 })
 
 app.put('/api/order-history/:id', async (req, res) => {
+    try {
+        await loadStore()
+    } catch {
+        return res.status(500).json({ success: false, message: 'Unable to load order history.' })
+    }
+
     const user = getUserByHeader(req)
     if (!user) {
         return res.status(404).json({ success: false, message: 'User not found.' })
@@ -706,6 +772,7 @@ app.put('/api/order-history/:id', async (req, res) => {
 
     const { id } = req.params
     const updates = req.body || {}
+    const { status, ...safeUpdates } = updates
 
     if (!user.orderHistory) {
         user.orderHistory = []
@@ -716,7 +783,7 @@ app.put('/api/order-history/:id', async (req, res) => {
         return res.status(404).json({ success: false, message: 'Order not found.' })
     }
 
-    user.orderHistory[index] = { ...user.orderHistory[index], ...updates, userId: user.id }
+    user.orderHistory[index] = { ...user.orderHistory[index], ...safeUpdates, userId: user.id }
 
     try {
         await saveStore()

@@ -69,20 +69,6 @@
                 <span :class="['order-status', statusClass(order.status)]">
                   {{ formatStatus(order.status) }}
                 </span>
-                <select
-                  v-if="canEditStatus(order)"
-                  class="status-select"
-                  :value="order.status"
-                  @change="updateStatus(order.id, $event.target.value)"
-                >
-                  <option
-                    v-for="option in statusOptions"
-                    :key="option"
-                    :value="option"
-                  >
-                    {{ formatStatus(option) }}
-                  </option>
-                </select>
               </div>
             </td>
             <td class="address-cell">{{ order.address || '—' }}</td>
@@ -116,12 +102,12 @@ const getAuthHeaders = () => {
 }
 
 const orders = ref([])
-const statusOptions = ['placed', 'in progress', 'issue', 'done']
+const statusOptions = ['placed', 'in progress', 'issue', 'delivered']
 const filters = [
   { label: 'All', value: 'all' },
   { label: 'Placed', value: 'placed' },
   { label: 'In progress', value: 'in progress' },
-  { label: 'Done', value: 'past' },
+  { label: 'Delivered', value: 'delivered' },
   { label: 'Issue', value: 'issue' }
 ]
 const activeFilter = ref('all')
@@ -134,13 +120,14 @@ const loadOrders = async () => {
   if (typeof window === 'undefined') return []
   try {
     // Try to load from API first
-    const response = await fetch(`${API_BASE}/api/order-history`, {
-      headers: getAuthHeaders()
+    const response = await fetch(`${API_BASE}/api/order-history?ts=${Date.now()}`, {
+      headers: getAuthHeaders(),
+      cache: 'no-store'
     })
     if (response.ok) {
       const data = await response.json()
       const apiOrders = data?.orderHistory || []
-      if (apiOrders.length > 0) {
+      if (Array.isArray(apiOrders)) {
         window.localStorage.setItem(getStorageKey(), JSON.stringify(apiOrders))
         return apiOrders
       }
@@ -157,6 +144,14 @@ const loadOrders = async () => {
   } catch {
     return []
   }
+}
+
+const refreshOrders = async () => {
+  const loadedOrders = await loadOrders()
+  orders.value = loadedOrders.map((order) => ({
+    ...order,
+    status: normalizeStatus(order.status)
+  }))
 }
 
 const saveOrders = async (nextOrders) => {
@@ -178,6 +173,7 @@ const saveOrders = async (nextOrders) => {
 
 const normalizeStatus = (value) => {
   const trimmed = String(value || '').toLowerCase().trim()
+  if (trimmed === 'done') return 'delivered'
   return statusOptions.includes(trimmed) ? trimmed : 'placed'
 }
 
@@ -209,8 +205,8 @@ const filteredOrders = computed(() => {
     subset = orders.value.filter((order) => normalizeStatus(order.status) === 'placed')
   } else if (filter === 'in progress') {
     subset = orders.value.filter((order) => normalizeStatus(order.status) === 'in progress')
-  } else if (filter === 'past') {
-    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'done')
+  } else if (filter === 'delivered') {
+    subset = orders.value.filter((order) => normalizeStatus(order.status) === 'delivered')
   } else if (filter === 'issue') {
     subset = orders.value.filter((order) => normalizeStatus(order.status) === 'issue')
   }
@@ -258,16 +254,14 @@ const countForFilter = (filterValue) => {
   if (filterValue === 'in progress') {
     return orders.value.filter((order) => normalizeStatus(order.status) === 'in progress').length
   }
-  if (filterValue === 'past') {
-    return orders.value.filter((order) => normalizeStatus(order.status) === 'done').length
+  if (filterValue === 'delivered') {
+    return orders.value.filter((order) => normalizeStatus(order.status) === 'delivered').length
   }
   if (filterValue === 'issue') {
     return orders.value.filter((order) => normalizeStatus(order.status) === 'issue').length
   }
   return orders.value.length
 }
-
-const canEditStatus = (order) => normalizeStatus(order.status) !== 'done'
 
 const toggleSort = (key) => {
   if (sortKey.value === key) {
@@ -341,26 +335,27 @@ const addRandomOrders = () => {
   saveOrders(nextOrders)
 }
 
-const updateStatus = (orderId, nextStatus) => {
-  const normalized = normalizeStatus(nextStatus)
-  const nextOrders = orders.value.map((order) =>
-    order.id === orderId ? { ...order, status: normalized } : order
-  )
-  orders.value = nextOrders
-  saveOrders(nextOrders)
+const handleWindowFocus = () => {
+  refreshOrders()
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    refreshOrders()
+  }
 }
 
 onMounted(async () => {
-  const loadedOrders = await loadOrders()
-  orders.value = loadedOrders.map((order) => ({
-    ...order,
-    status: normalizeStatus(order.status)
-  }))
+  await refreshOrders()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('focus', handleWindowFocus)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('focus', handleWindowFocus)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 watch(activeFilter, () => {
@@ -596,7 +591,7 @@ watch(filteredOrders, (value) => {
   white-space: nowrap;
 }
 
-.order-status.completed {
+.order-status.delivered {
   background: linear-gradient(135deg, #18a359, #0f8a40);
 }
 
@@ -616,16 +611,6 @@ watch(filteredOrders, (value) => {
   gap: 8px;
 }
 
-.status-select {
-  background: #f1f5ff;
-  border: 1px solid rgba(61, 90, 255, 0.45);
-  color: #0f1f3d;
-  border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
 .seed-button {
   border: none;
   border-radius: 999px;
@@ -642,12 +627,6 @@ watch(filteredOrders, (value) => {
 .seed-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 28px rgba(61, 90, 255, 0.35);
-}
-
-.status-select:focus {
-  outline: none;
-  border-color: #5281ff;
-  box-shadow: 0 0 0 2px rgba(82, 129, 255, 0.25);
 }
 
 @media (max-width: 768px) {
