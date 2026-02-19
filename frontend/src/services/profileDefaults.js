@@ -1,5 +1,6 @@
 export const PROFILE_KEY = 'direct-mail-profile'
 export const CURRENT_USER_KEY = 'direct-mail-current-user-id'
+export const USER_TYPE_KEY = 'direct-mail-user-type'
 export const PROFILE_UPDATED_EVENT = 'direct-mail-profile-updated'
 
 export const getCurrentUserId = () => {
@@ -9,6 +10,21 @@ export const getCurrentUserId = () => {
     return null
   }
 }
+
+export const normalizeUserType = (value) => {
+  const normalized = String(value || '').toLowerCase().trim()
+  return normalized === 'admin' ? 'admin' : 'standard'
+}
+
+export const getCurrentUserType = () => {
+  try {
+    return normalizeUserType(localStorage.getItem(USER_TYPE_KEY))
+  } catch (error) {
+    return 'standard'
+  }
+}
+
+export const isCurrentUserAdmin = () => getCurrentUserType() === 'admin'
 
 export const defaultProfileImage =
   'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg'

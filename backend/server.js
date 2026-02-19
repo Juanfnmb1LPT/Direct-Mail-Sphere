@@ -170,6 +170,8 @@ const getUserByHeader = (req) => {
     return store.users.find((user) => user.id === userId)
 }
 
+const isAdminUser = (user) => normalizeUserType(user?.userType) === 'admin'
+
 const pruneExpiredResetTokens = () => {
     const now = Date.now()
     for (const [token, entry] of resetTokens.entries()) {
@@ -712,7 +714,42 @@ app.get('/api/order-history', async (req, res) => {
         return res.status(404).json({ success: false, message: 'User not found.' })
     }
 
+    if (isAdminUser(user)) {
+        const allOrders = (store.users || []).flatMap((entry) =>
+            (entry.orderHistory || []).map((order) => ({
+                ...order,
+                userId: order?.userId || entry.id,
+                userName: `${entry?.profile?.firstName || ''} ${entry?.profile?.lastName || ''}`.trim() || entry.username || entry.id
+            }))
+        )
+        return res.json({ success: true, orderHistory: allOrders })
+    }
+
     return res.json({ success: true, orderHistory: user.orderHistory || [] })
+})
+
+app.get('/api/users', async (req, res) => {
+    try {
+        await loadStore()
+    } catch {
+        return res.status(500).json({ success: false, message: 'Unable to load users.' })
+    }
+
+    const users = (store.users || []).map((entry) => {
+        const first = String(entry?.profile?.firstName || '').trim()
+        const last = String(entry?.profile?.lastName || '').trim()
+        const fullName = `${first} ${last}`.trim() || entry.username || entry.id
+
+        return {
+            id: entry.id,
+            user: fullName,
+            username: entry.username || '',
+            email: entry?.profile?.email || '',
+            userType: normalizeUserType(entry.userType)
+        }
+    })
+
+    return res.json({ success: true, users })
 })
 
 app.post('/api/order-history', async (req, res) => {
@@ -743,10 +780,10 @@ app.post('/api/order-history', async (req, res) => {
     )
 
     // Replace all orders with new ones, ensuring each has a userId.
-    // Status is preserved for existing records and defaults to "placed" for new records.
+    // Status is preserved for existing records and normalized from payload for new records.
     user.orderHistory = incoming.map((order) => ({
         ...order,
-        status: existingStatusById.get(order?.id) || 'placed',
+        status: existingStatusById.get(order?.id) || normalizeOrderStatus(order?.status),
         userId: user.id
     }))
 
@@ -771,20 +808,48 @@ app.put('/api/order-history/:id', async (req, res) => {
         return res.status(404).json({ success: false, message: 'User not found.' })
     }
 
+    const adminRequest = isAdminUser(user)
+
     const { id } = req.params
     const updates = req.body || {}
-    const { status, ...safeUpdates } = updates
+    const requestedUserId = String(updates?.userId || '').trim()
+    const createdAtMatch = String(updates?.createdAt || '').trim()
+    const { status, userId: ignoredUserId, ...safeUpdates } = updates
 
-    if (!user.orderHistory) {
-        user.orderHistory = []
+    let targetUser = user
+
+    if (adminRequest) {
+        if (!requestedUserId) {
+            return res.status(400).json({ success: false, message: 'userId is required for admin status updates.' })
+        }
+        targetUser = store.users.find((entry) => entry.id === requestedUserId)
+        if (!targetUser) {
+            return res.status(404).json({ success: false, message: 'Target user not found.' })
+        }
     }
 
-    const index = user.orderHistory.findIndex((o) => o.id === id && o.userId === user.id)
+    if (!targetUser.orderHistory) {
+        targetUser.orderHistory = []
+    }
+
+    const index = targetUser.orderHistory.findIndex((order) => {
+        if (!order || order.id !== id) return false
+        if (!adminRequest && order.userId !== user.id) return false
+        if (createdAtMatch && String(order.createdAt || '').trim() !== createdAtMatch) return false
+        return true
+    })
+
     if (index === -1) {
         return res.status(404).json({ success: false, message: 'Order not found.' })
     }
 
-    user.orderHistory[index] = { ...user.orderHistory[index], ...safeUpdates, userId: user.id }
+    const existingOrder = targetUser.orderHistory[index] || {}
+    targetUser.orderHistory[index] = {
+        ...existingOrder,
+        ...safeUpdates,
+        status: status === undefined ? normalizeOrderStatus(existingOrder.status) : normalizeOrderStatus(status),
+        userId: targetUser.id
+    }
 
     try {
         await saveStore()
@@ -792,7 +857,7 @@ app.put('/api/order-history/:id', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Unable to update order.' })
     }
 
-    return res.json({ success: true, order: user.orderHistory[index] })
+    return res.json({ success: true, order: targetUser.orderHistory[index] })
 })
 
 const startServer = async () => {

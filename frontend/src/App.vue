@@ -49,34 +49,44 @@
                 <span class="sidebar-label">Dashboard</span>
               </RouterLink>
 
-              <RouterLink class="sidebar-link" :class="{ active: isCreateMailActive }" to="/create-mail">
+              <RouterLink
+                v-if="!isAdmin"
+                class="sidebar-link"
+                :class="{ active: isCreateMailActive }"
+                to="/create-mail"
+              >
                 <span class="sidebar-icon" aria-hidden="true">✉</span>
                 <span class="sidebar-label">Create Mail</span>
               </RouterLink>
 
-              <RouterLink class="sidebar-link" :class="{ active: route.name === 'map-test' }" to="/map-test">
+              <RouterLink v-if="!isAdmin" class="sidebar-link" :class="{ active: route.name === 'map-test' }" to="/map-test">
                 <span class="sidebar-icon" aria-hidden="true">⌖</span>
                 <span class="sidebar-label">Map Test</span>
               </RouterLink>
 
               <RouterLink class="sidebar-link" :class="{ active: route.name === 'orders' }" to="/orders">
                 <span class="sidebar-icon" aria-hidden="true">🕘</span>
-                <span class="sidebar-label">Order History</span>
+                <span class="sidebar-label">Orders</span>
               </RouterLink>
 
-              <RouterLink class="sidebar-link" :class="{ active: route.name === 'listings' }" to="/listings">
+              <RouterLink v-if="isAdmin" class="sidebar-link" :class="{ active: route.name === 'users' }" to="/users">
+                <span class="sidebar-icon" aria-hidden="true">👥</span>
+                <span class="sidebar-label">Users</span>
+              </RouterLink>
+
+              <RouterLink v-if="!isAdmin" class="sidebar-link" :class="{ active: route.name === 'listings' }" to="/listings">
                 <span class="sidebar-icon" aria-hidden="true">▦</span>
                 <span class="sidebar-label">User Listings</span>
               </RouterLink>
 
-              <RouterLink class="sidebar-link" :class="{ active: route.name === 'profile' }" to="/profile">
+              <RouterLink v-if="!isAdmin" class="sidebar-link" :class="{ active: route.name === 'profile' }" to="/profile">
                 <span class="sidebar-icon" aria-hidden="true">⚙</span>
                 <span class="sidebar-label">Update Profile</span>
               </RouterLink>
             </nav>
 
             <div class="sidebar-footer">
-              <a class="sidebar-link" href="#" @click.prevent="goToHome">
+              <a v-if="!isAdmin" class="sidebar-link" href="#" @click.prevent="goToHome">
                 <span class="sidebar-icon" aria-hidden="true">🏁</span>
                 <span class="sidebar-label">Landing Page</span>
               </a>
@@ -102,11 +112,14 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import {
+  CURRENT_USER_KEY,
   defaultProfileImage,
+  getCurrentUserType,
   normalizeProfile,
   notifyProfileUpdated,
   PROFILE_KEY,
-  PROFILE_UPDATED_EVENT
+  PROFILE_UPDATED_EVENT,
+  USER_TYPE_KEY
 } from './services/profileDefaults'
 
 const route = useRoute()
@@ -115,11 +128,13 @@ const isSidebarExpanded = ref(true)
 const isMobileMenuOpen = ref(false)
 const profileImage = ref(defaultProfileImage)
 const profileName = ref('User')
+const userType = ref('standard')
 
 const dashboardRouteNames = new Set([
   'dashboard',
   'profile',
   'orders',
+  'users',
   'listings',
   'create-mail',
   'create-mail-form',
@@ -127,7 +142,11 @@ const dashboardRouteNames = new Set([
   'map-test'
 ])
 
+const adminAllowedRouteNames = new Set(['dashboard', 'orders', 'users'])
+
 const showDashboardNav = computed(() => dashboardRouteNames.has(route.name))
+
+const isAdmin = computed(() => userType.value === 'admin')
 
 const isCreateMailActive = computed(() =>
   ['create-mail', 'create-mail-form', 'create-mail-payment'].includes(route.name)
@@ -147,6 +166,8 @@ const goToHome = () => {
 
 const signOut = () => {
   localStorage.removeItem(PROFILE_KEY)
+  localStorage.removeItem(CURRENT_USER_KEY)
+  localStorage.removeItem(USER_TYPE_KEY)
   notifyProfileUpdated()
   router.push('/')
 }
@@ -158,10 +179,19 @@ const loadSidebarProfile = () => {
     const first = String(profile?.firstName || '').trim()
     profileName.value = first || 'User'
     profileImage.value = String(profile?.agentPhoto || '').trim() || defaultProfileImage
+    userType.value = getCurrentUserType()
   } catch (error) {
     profileName.value = 'User'
     profileImage.value = defaultProfileImage
+    userType.value = 'standard'
   }
+}
+
+const enforceRoleRouteAccess = () => {
+  if (!isAdmin.value) return
+  if (adminAllowedRouteNames.has(route.name)) return
+  if (!showDashboardNav.value) return
+  router.replace('/dashboard')
 }
 
 const handleSidebarImageError = () => {
@@ -172,6 +202,7 @@ watch(
   () => route.fullPath,
   () => {
     loadSidebarProfile()
+    enforceRoleRouteAccess()
   },
   { immediate: true }
 )

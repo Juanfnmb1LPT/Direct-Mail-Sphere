@@ -5,11 +5,13 @@
       <div class="dashboard-hero">
         <p class="welcome-label">Dashboard</p>
         <h2 class="dashboard-heading">Welcome back {{ displayName }}!</h2>
-        <p class="dashboard-subtitle">Choose where you want to go next.</p>
+        <p class="dashboard-subtitle">
+          {{ isAdmin ? 'Manage platform activity from your admin dashboard.' : 'Choose where you want to go next.' }}
+        </p>
       </div>
 
       <div class="dashboard-grid">
-        <RouterLink class="dashboard-action-card" to="/create-mail">
+        <RouterLink v-if="!isAdmin" class="dashboard-action-card" to="/create-mail">
           <div class="card-header">
             <span class="card-icon" aria-hidden="true">✉</span>
             <h3>Create Mail</h3>
@@ -20,12 +22,20 @@
         <RouterLink class="dashboard-action-card" to="/orders">
           <div class="card-header">
             <span class="card-icon" aria-hidden="true">🕘</span>
-            <h3>Order History</h3>
+            <h3>{{ isAdmin ? 'Orders' : 'Order History' }}</h3>
           </div>
-          <p>Review previous orders and track campaign activity.</p>
+          <p>{{ isAdmin ? 'Review orders across all users.' : 'Review previous orders and track campaign activity.' }}</p>
         </RouterLink>
 
-        <RouterLink class="dashboard-action-card" to="/listings">
+        <RouterLink v-if="isAdmin" class="dashboard-action-card" to="/users">
+          <div class="card-header">
+            <span class="card-icon" aria-hidden="true">👥</span>
+            <h3>Users</h3>
+          </div>
+          <p>View all user accounts in one place.</p>
+        </RouterLink>
+
+        <RouterLink v-if="!isAdmin" class="dashboard-action-card" to="/listings">
           <div class="card-header">
             <span class="card-icon" aria-hidden="true">▦</span>
             <h3>User Listings</h3>
@@ -33,7 +43,7 @@
           <p>View and manage your available property listings.</p>
         </RouterLink>
 
-        <RouterLink class="dashboard-action-card" to="/profile">
+        <RouterLink v-if="!isAdmin" class="dashboard-action-card" to="/profile">
           <div class="card-header">
             <span class="card-icon" aria-hidden="true">⚙</span>
             <h3>Update Profile</h3>
@@ -41,13 +51,13 @@
           <p>Edit your account and contact information.</p>
         </RouterLink>
 
-        <div class="dashboard-action-card dashboard-stat-card">
+        <div v-if="!isAdmin" class="dashboard-action-card dashboard-stat-card">
           <p class="stat-note">our records show</p>
           <h3 class="stat-title">Your total orders:</h3>
           <p class="stat-value">0</p>
         </div>
 
-        <div class="dashboard-action-card dashboard-stat-card">
+        <div v-if="!isAdmin" class="dashboard-action-card dashboard-stat-card">
           <p class="stat-note">our records show</p>
           <h3 class="stat-title">You marketed to this many people:</h3>
           <p class="stat-value">0</p>
@@ -62,9 +72,11 @@
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { profileService } from '../services/profileService'
+import { getCurrentUserType } from '../services/profileDefaults'
 
 const firstName = ref('')
 const lastName = ref('')
+const isAdmin = ref(false)
 
 const displayName = computed(() => {
   const first = String(firstName.value || '').trim()
@@ -86,6 +98,7 @@ const loadNameFromCachedProfile = () => {
 }
 
 const loadProfile = async () => {
+  isAdmin.value = getCurrentUserType() === 'admin'
   loadNameFromCachedProfile()
   const result = await profileService.getProfile()
   if (result?.success && result?.profile) {
