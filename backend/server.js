@@ -548,7 +548,7 @@ app.put('/api/profile', async (req, res) => {
 })
 
 app.post('/api/send-csv', async (req, res) => {
-    const { recipientEmail, csvContent, templateName } = req.body || {}
+    const { recipientEmail, csvContent, templateName, fileName } = req.body || {}
 
     const email = String(recipientEmail || '').trim()
     const csv = String(csvContent || '')
@@ -572,6 +572,7 @@ app.post('/api/send-csv', async (req, res) => {
 
     try {
         const subjectPrefix = String(templateName || 'Direct Mail Sphere').trim()
+        const safeAttachmentName = String(fileName || '').trim().replace(/[\\/:*?"<>|]/g, '') || 'create-mail.csv'
         const emailBodyHtml = `
                     <div style="font-family: Arial, Helvetica, sans-serif; max-width: 640px; margin: 0 auto; color: #0f1f3d;">
                         <h2 style="margin: 0 0 10px; font-size: 20px;">Your CSV export is ready</h2>
@@ -587,7 +588,7 @@ app.post('/api/send-csv', async (req, res) => {
             html: emailBodyHtml,
             attachments: [
                 {
-                    filename: 'create-mail.csv',
+                    filename: safeAttachmentName,
                     content: Buffer.from(csv).toString('base64')
                 }
             ]
