@@ -12,6 +12,7 @@ import CreateMailPaymentView from '../views/CreateMailPaymentView.vue'
 import UpdateProfileView from '../views/UpdateProfileView.vue'
 import OrderHistoryView from '../views/OrderHistoryView.vue'
 import UserListingsView from '../views/UserListingsView.vue'
+import UsersView from '../views/UsersView.vue'
 import NikTestPageView from '../views/NikTestPageView.vue'
 import JuansPageView from '../views/JuansPageView.vue'
 
@@ -24,6 +25,7 @@ const routes = [
     { path: '/dashboard', name: 'dashboard', component: DashboardView, meta: { title: 'Dashboard' } },
     { path: '/profile', name: 'profile', component: UpdateProfileView, meta: { title: 'Update Profile' } },
     { path: '/orders', name: 'orders', component: OrderHistoryView, meta: { title: 'Order History' } },
+    { path: '/users', name: 'users', component: UsersView, meta: { title: 'Users' } },
     { path: '/listings', name: 'listings', component: UserListingsView, meta: { title: 'User Listings' } },
     { path: '/create-mail', name: 'create-mail', component: CreateMailTemplatesView, meta: { title: 'Create Mail Templates' } },
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },

@@ -4,7 +4,7 @@
     <header class="order-history-header">
       <div class="header-left">
         <h1>Order History</h1>
-        <p class="subtitle">Track your direct mail campaigns</p>
+        <p class="subtitle">{{ isAdmin ? 'Track all orders across all users' : 'Track your direct mail campaigns' }}</p>
         <div class="filter-row">
           <button
             v-for="filter in filters"
@@ -26,8 +26,9 @@
             autocomplete="off"
           />
         </div>
+        <p v-if="saveError" class="save-error">{{ saveError }}</p>
       </div>
-      <button type="button" class="seed-button" @click="addRandomOrders">
+      <button v-if="!isAdmin" type="button" class="seed-button" @click="addRandomOrders">
         Add 20 random orders
       </button>
     </header>
@@ -49,6 +50,7 @@
               </button>
             </th>
             <th>Status</th>
+            <th v-if="isAdmin">User</th>
             <th>
               <button type="button" class="sort-button" @click="toggleSort('address')">
                 Address
@@ -59,18 +61,31 @@
         </thead>
         <tbody>
           <tr v-if="visibleOrders.length === 0">
-            <td class="empty-row" colspan="4">No orders yet.</td>
+            <td class="empty-row" :colspan="isAdmin ? 5 : 4">No orders yet.</td>
           </tr>
-          <tr v-for="order in visibleOrders" :key="order.id">
+          <tr v-for="(order, rowIndex) in visibleOrders" :key="`${order.id}-${order.userId || 'unknown'}-${order.createdAt || ''}-${rowIndex}`">
             <td>{{ formatDate(order) }}</td>
             <td>#{{ order.id }}</td>
             <td>
               <div class="status-cell">
-                <span :class="['order-status', statusClass(order.status)]">
+                <template v-if="isAdmin">
+                  <select
+                    :class="['status-select', `status-select-${statusClass(order.status)}`]"
+                    :value="normalizeStatus(order.status)"
+                    :disabled="isSavingOrder(order)"
+                    @change="updateOrderStatus(order, $event.target.value)"
+                  >
+                    <option v-for="status in statusOptions" :key="status" :value="status">
+                      {{ formatStatus(status) }}
+                    </option>
+                  </select>
+                </template>
+                <span v-else :class="['order-status', statusClass(order.status)]">
                   {{ formatStatus(order.status) }}
                 </span>
               </div>
             </td>
+            <td v-if="isAdmin">{{ order.userName || order.userId || 'Unknown user' }}</td>
             <td class="address-cell">{{ order.address || '—' }}</td>
           </tr>
         </tbody>
@@ -82,7 +97,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { getCurrentUserId } from '../services/profileDefaults'
+import { getCurrentUserId, getCurrentUserType } from '../services/profileDefaults'
 
 const ORDERS_KEY_PREFIX = 'direct-mail-orders'
 const API_BASE = 'http://localhost:3001'
@@ -115,6 +130,13 @@ const searchQuery = ref('')
 const visibleCount = ref(20)
 const sortKey = ref('date')
 const sortDir = ref('desc')
+const isAdmin = ref(false)
+const savingByOrderKey = ref({})
+const saveError = ref('')
+
+const orderKey = (order) => `${order?.id || ''}::${order?.userId || ''}::${order?.createdAt || ''}`
+
+const isSavingOrder = (order) => Boolean(savingByOrderKey.value[orderKey(order)])
 
 const loadOrders = async () => {
   if (typeof window === 'undefined') return []
@@ -186,6 +208,54 @@ const formatStatus = (value) =>
 
 const statusClass = (value) => normalizeStatus(value).replace(' ', '-')
 
+const updateOrderStatus = async (order, nextStatus) => {
+  if (!isAdmin.value || !order?.id || !order?.userId) return
+
+  const normalizedNext = normalizeStatus(nextStatus)
+  const current = normalizeStatus(order.status)
+  if (normalizedNext === current) return
+
+  saveError.value = ''
+  const key = orderKey(order)
+  const previousStatus = current
+  savingByOrderKey.value = { ...savingByOrderKey.value, [key]: true }
+
+  orders.value = orders.value.map((entry) =>
+    orderKey(entry) === key ? { ...entry, status: normalizedNext } : entry
+  )
+
+  try {
+    const response = await fetch(`${API_BASE}/api/order-history/${encodeURIComponent(order.id)}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        status: normalizedNext,
+        userId: order.userId,
+        createdAt: order.createdAt || ''
+      })
+    })
+
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok || !data?.success) {
+      throw new Error(data?.message || 'Unable to update status.')
+    }
+
+    const savedStatus = normalizeStatus(data?.order?.status || normalizedNext)
+    orders.value = orders.value.map((entry) =>
+      orderKey(entry) === key ? { ...entry, status: savedStatus } : entry
+    )
+  } catch (error) {
+    orders.value = orders.value.map((entry) =>
+      orderKey(entry) === key ? { ...entry, status: previousStatus } : entry
+    )
+    saveError.value = error?.message || 'Unable to update status.'
+  } finally {
+    const nextSaving = { ...savingByOrderKey.value }
+    delete nextSaving[key]
+    savingByOrderKey.value = nextSaving
+  }
+}
+
 const formatDate = (order) => {
   if (order.date) return order.date
   if (!order.createdAt) return ''
@@ -218,10 +288,12 @@ const filteredOrders = computed(() => {
     const dateText = String(formatDate(order)).toLowerCase()
     const idText = String(order.id || '').toLowerCase()
     const addressText = String(order.address || '').toLowerCase()
+    const userText = String(order.userName || order.userId || '').toLowerCase()
     return (
       dateText.includes(query) ||
       idText.includes(query) ||
-      addressText.includes(query)
+      addressText.includes(query) ||
+      userText.includes(query)
     )
   })
 })
@@ -346,6 +418,7 @@ const handleVisibilityChange = () => {
 }
 
 onMounted(async () => {
+  isAdmin.value = getCurrentUserType() === 'admin'
   await refreshOrders()
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('focus', handleWindowFocus)
@@ -433,6 +506,13 @@ watch(filteredOrders, (value) => {
 
 .search-row {
   margin-top: 12px;
+}
+
+.save-error {
+  margin: 8px 0 0;
+  color: #b42318;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .order-search {
@@ -578,6 +658,40 @@ watch(filteredOrders, (value) => {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.status-select {
+  border: 1px solid rgba(15, 31, 61, 0.3);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0f1f3d;
+  background: #ffffff;
+}
+
+.status-select-placed {
+  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.status-select-delivered {
+  background: linear-gradient(135deg, #18a359, #0f8a40);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.status-select-in-progress {
+  background: linear-gradient(135deg, #f5c26b, #e2a243);
+  color: #0b1630;
+  border-color: transparent;
+}
+
+.status-select-issue {
+  background: linear-gradient(135deg, #ff8a80, #d14646);
+  color: #ffffff;
+  border-color: transparent;
 }
 
 .order-status {

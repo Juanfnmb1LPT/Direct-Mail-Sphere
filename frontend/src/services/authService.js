@@ -1,4 +1,11 @@
-import { normalizeProfile, notifyProfileUpdated, PROFILE_KEY, CURRENT_USER_KEY } from './profileDefaults'
+import {
+    normalizeProfile,
+    normalizeUserType,
+    notifyProfileUpdated,
+    PROFILE_KEY,
+    CURRENT_USER_KEY,
+    USER_TYPE_KEY
+} from './profileDefaults'
 
 const API_BASE = 'http://localhost:3001'
 
@@ -23,6 +30,14 @@ const cacheCurrentUser = (userId) => {
     }
 }
 
+const cacheUserType = (userType) => {
+    try {
+        localStorage.setItem(USER_TYPE_KEY, normalizeUserType(userType))
+    } catch (error) {
+        // Ignore storage errors.
+    }
+}
+
 export const authService = {
     async login(email, password) {
         const response = await fetch(`${API_BASE}/api/login`, {
@@ -42,6 +57,7 @@ export const authService = {
         const data = await response.json()
         cacheProfile(data?.profile)
         cacheCurrentUser(data?.user?.id)
+        cacheUserType(data?.user?.userType)
         return data
     },
     async signup(firstName, lastName, email, phone, password) {
