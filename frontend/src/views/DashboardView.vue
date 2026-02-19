@@ -1,6 +1,8 @@
 <template>
   <main>
-    <section class="dashboard-page">
+    <section class="dashboard-page" :class="{ 'is-entering': showWelcomeAnimation }">
+    <div v-if="showWelcomeAnimation" class="login-welcome-overlay" aria-hidden="true">
+    </div>
     <div class="dashboard-content">
       <div class="dashboard-hero">
         <p class="welcome-label">Dashboard</p>
@@ -69,14 +71,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { profileService } from '../services/profileService'
 import { getCurrentUserType } from '../services/profileDefaults'
 
+const route = useRoute()
+const router = useRouter()
 const firstName = ref('')
 const lastName = ref('')
 const isAdmin = ref(false)
+const showWelcomeAnimation = ref(false)
+let welcomeTimerId = null
 
 const displayName = computed(() => {
   const first = String(firstName.value || '').trim()
@@ -109,19 +115,54 @@ const loadProfile = async () => {
 
 onMounted(() => {
   loadProfile()
+  if (route.query?.welcome === '1') {
+    showWelcomeAnimation.value = true
+    const nextQuery = { ...route.query }
+    delete nextQuery.welcome
+    router.replace({ path: route.path, query: nextQuery })
+    welcomeTimerId = window.setTimeout(() => {
+      showWelcomeAnimation.value = false
+      welcomeTimerId = null
+    }, 1200)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (welcomeTimerId) {
+    clearTimeout(welcomeTimerId)
+    welcomeTimerId = null
+  }
 })
 </script>
 
 <style scoped>
 .dashboard-page {
+  position: relative;
+  overflow: hidden;
   min-height: calc(100vh - 190px);
   background: linear-gradient(135deg, #ffffff 0%, #e3eeff 52%, #cfdfff 100%);
   padding: 30px 24px 34px;
 }
 
+.login-welcome-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 38%, rgba(96, 132, 255, 0.28), rgba(96, 132, 255, 0));
+  animation: welcome-overlay-fade 1.2s ease forwards;
+  z-index: 2;
+}
+
 .dashboard-content {
   max-width: 1100px;
   margin: 0 auto;
+}
+
+.dashboard-page.is-entering .dashboard-hero,
+.dashboard-page.is-entering .dashboard-grid {
+  animation: dashboard-rise-in 0.65s ease;
 }
 
 .dashboard-hero {
@@ -245,6 +286,29 @@ onMounted(() => {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@keyframes dashboard-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes welcome-overlay-fade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
   }
 }
 </style>

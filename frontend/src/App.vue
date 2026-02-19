@@ -99,12 +99,20 @@
         </aside>
 
         <main class="dashboard-main">
-          <router-view />
+          <router-view v-slot="{ Component, route: currentRoute }">
+            <Transition name="page-fade" mode="out-in" appear>
+              <component :is="Component" :key="currentRoute.fullPath" />
+            </Transition>
+          </router-view>
         </main>
       </div>
     </template>
 
-    <router-view v-else />
+    <router-view v-else v-slot="{ Component, route: currentRoute }">
+      <Transition name="page-fade" mode="out-in" appear>
+        <component :is="Component" :key="currentRoute.fullPath" />
+      </Transition>
+    </router-view>
   </div>
 </template>
 
@@ -219,6 +227,30 @@ onUnmounted(() => {
 <style>
 .app-shell {
   min-height: 100vh;
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.page-fade-enter-to,
+.page-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition-duration: 0.01ms;
+  }
 }
 
 .dashboard-top-header {

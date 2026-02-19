@@ -177,7 +177,7 @@ const handleLogin = async () => {
 
     if (result.success) {
       success.value = true
-      await router.push('/dashboard')
+      await router.push({ path: '/dashboard', query: { welcome: '1' } })
     } else {
       error.value = result.message || 'Invalid credentials'
     }
