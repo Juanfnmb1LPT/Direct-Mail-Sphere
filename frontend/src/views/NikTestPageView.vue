@@ -39,8 +39,7 @@
           </button>
         </div>
         <div class="modal-content">
-          <p v-if="activeProject.id !== 'volume-control-fun'" class="modal-body">{{ activeProject.details }}</p>
-          <div v-else class="volume-module">
+          <div v-if="activeProject.id === 'volume-control-fun'" class="volume-module">
             <div class="volume-header">
               <p class="volume-label">Current volume</p>
               <p class="volume-value">{{ volume }}%</p>
@@ -108,6 +107,47 @@
               </div>
             </div>
           </div>
+          <div v-else-if="activeProject.id === 'magic-8-ball'" class="eightball-module">
+            <div class="eightball-header">
+              <p class="eightball-label">Magic 8-ball</p>
+            </div>
+
+            <div class="eightball-section">
+              <p class="eightball-text">Ask any yes/no question and let the 8-ball decide.</p>
+              <label class="eightball-input-wrap">
+                <span class="eightball-input-label">Your question</span>
+                <input
+                  v-model="eightBallQuestion"
+                  class="eightball-input"
+                  type="text"
+                  placeholder="Will this side project be legendary?"
+                  maxlength="120"
+                />
+              </label>
+
+              <div class="eightball-orb" :class="{ 'is-shaking': isEightBallShaking }" aria-hidden="true">
+                <div class="eightball-window">
+                  <span v-if="showEightBallPrediction" class="eightball-window-text">{{ eightBallPrediction }}</span>
+                  <span v-else class="eightball-window-text is-muted">...</span>
+                </div>
+              </div>
+
+              <div class="eightball-actions">
+                <button
+                  class="eightball-button"
+                  type="button"
+                  :disabled="isEightBallShaking || !eightBallQuestion.trim()"
+                  @click="askEightBall"
+                >
+                  Shake the 8-ball
+                </button>
+                <button class="eightball-button outline" type="button" :disabled="isEightBallShaking" @click="resetEightBall">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+          <p v-else class="modal-body">{{ activeProject.details }}</p>
         </div>
       </div>
     </div>
@@ -127,11 +167,11 @@ const projects = [
     details: 'Pick a volume using a random button or by drawing a circle to set the value.'
   },
   {
-    id: 'launch-pad',
-    title: 'Launch Pad',
-    icon: '🎯',
-    blurb: 'Small, fast experiments we can ship in a single session.',
-    details: 'Rapid prototypes, tiny utilities, and focused improvements we can finish quickly.'
+    id: 'magic-8-ball',
+    title: 'Magic 8-Ball',
+    icon: '🎱',
+    blurb: 'Ask a question and get an animated prediction.',
+    details: 'A playful 8-ball that shakes and reveals a random prediction.'
   },
   {
     id: 'widget-workshop',
@@ -170,10 +210,28 @@ const circleCanvas = ref(null)
 const timerResult = ref(null)
 const timerSeconds = ref(null)
 const isTimerRunning = ref(false)
+const eightBallQuestion = ref('')
+const eightBallPrediction = ref('')
+const isEightBallShaking = ref(false)
+const showEightBallPrediction = ref(false)
 let isDrawing = false
 let points = []
 let timerId = null
 let timerStart = null
+let eightBallTimerId = null
+
+const eightBallPredictions = [
+  'Yes, absolutely.',
+  'No chance today.',
+  'Signs point to yes.',
+  'Reply hazy, ask again.',
+  'Definitely not.',
+  'The odds are in your favor.',
+  'Better not tell you now.',
+  'Focus and try again.',
+  'A surprise yes is coming.',
+  'It may take more coffee.'
+]
 
 const getNow = () => {
   if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
@@ -184,9 +242,17 @@ const getNow = () => {
 
 const openProject = (project) => {
   activeProject.value = project
+  if (project?.id === 'magic-8-ball') {
+    resetEightBall()
+  }
 }
 
 const closeProject = () => {
+  if (eightBallTimerId) {
+    clearTimeout(eightBallTimerId)
+    eightBallTimerId = null
+  }
+  isEightBallShaking.value = false
   timerResult.value = null
   timerSeconds.value = null
   stopHiddenTimer(true)
@@ -334,6 +400,38 @@ const clearCanvas = () => {
   }
   points = []
   circleScore.value = null
+}
+
+const pickRandom = (items) => {
+  if (!Array.isArray(items) || !items.length) {
+    return ''
+  }
+  return items[Math.floor(Math.random() * items.length)]
+}
+
+const resetEightBall = () => {
+  if (eightBallTimerId) {
+    clearTimeout(eightBallTimerId)
+    eightBallTimerId = null
+  }
+  isEightBallShaking.value = false
+  showEightBallPrediction.value = false
+  eightBallPrediction.value = ''
+}
+
+const askEightBall = () => {
+  if (isEightBallShaking.value || !String(eightBallQuestion.value || '').trim()) {
+    return
+  }
+  showEightBallPrediction.value = false
+  eightBallPrediction.value = ''
+  isEightBallShaking.value = true
+  eightBallTimerId = window.setTimeout(() => {
+    eightBallPrediction.value = pickRandom(eightBallPredictions)
+    showEightBallPrediction.value = true
+    isEightBallShaking.value = false
+    eightBallTimerId = null
+  }, 1100)
 }
 </script>
 
@@ -613,6 +711,148 @@ const clearCanvas = () => {
   margin: 0;
   color: #264173;
   font-weight: 600;
+}
+
+.eightball-module {
+  display: grid;
+  gap: 14px;
+}
+
+.eightball-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.eightball-label {
+  margin: 0;
+  color: #264173;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.eightball-section {
+  border-radius: 14px;
+  border: 1px solid rgba(15, 31, 61, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.eightball-text {
+  margin: 0;
+  color: #264173;
+}
+
+.eightball-input-wrap {
+  display: grid;
+  gap: 8px;
+}
+
+.eightball-input-label {
+  margin: 0;
+  color: #264173;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.eightball-input {
+  border: 1px solid rgba(15, 31, 61, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #0b1630;
+  background: #ffffff;
+  font: inherit;
+}
+
+.eightball-input:focus {
+  outline: 2px solid rgba(61, 90, 255, 0.3);
+  border-color: #3d5aff;
+}
+
+.eightball-orb {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  margin: 4px auto;
+  background: radial-gradient(circle at 30% 22%, #45557a 0%, #111a2f 45%, #070b14 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 18px 24px rgba(11, 22, 48, 0.22);
+}
+
+.eightball-orb.is-shaking {
+  animation: eightball-shake 0.32s linear 3;
+}
+
+.eightball-window {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #3f76ff 0%, #1f4ccf 58%, #153591 100%);
+  display: grid;
+  place-items: center;
+  padding: 12px;
+}
+
+.eightball-window-text {
+  margin: 0;
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  font-weight: 700;
+  animation: eightball-fade 0.35s ease;
+}
+
+.eightball-window-text.is-muted {
+  opacity: 0.7;
+}
+
+.eightball-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.eightball-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #5281ff, #3b6cff);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 16px rgba(11, 22, 48, 0.12);
+}
+
+.eightball-button.outline {
+  background: transparent;
+  color: #0b1630;
+  border: 1px solid rgba(15, 31, 61, 0.2);
+  box-shadow: none;
+}
+
+.eightball-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@keyframes eightball-shake {
+  0% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-7px) rotate(-2deg); }
+  40% { transform: translateX(7px) rotate(2deg); }
+  60% { transform: translateX(-5px) rotate(-1.5deg); }
+  80% { transform: translateX(5px) rotate(1.5deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+@keyframes eightball-fade {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .modal-close {
