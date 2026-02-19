@@ -31,7 +31,7 @@ const routes = [
     { path: '/create-mail/form', name: 'create-mail-form', component: CreateMailView, meta: { title: 'Create Mail Form' } },
     { path: '/create-mail/payment', name: 'create-mail-payment', component: CreateMailPaymentView, meta: { title: 'Payment' } },
     { path: '/map-test', name: 'map-test', component: HouseMapView, meta: { title: 'House Map' } },
-    { path: '/nik-test-page', name: 'nik-test-page', component: NikTestPageView, meta: { title: 'Nik page' } },
+    { path: '/niks-page', name: 'niks-page', component: NikTestPageView, meta: { title: "Nik's page" } },
     { path: '/juans-page', name: 'juans-page', component: JuansPageView, meta: { title: "Juan's Page" } }
 
 ]
