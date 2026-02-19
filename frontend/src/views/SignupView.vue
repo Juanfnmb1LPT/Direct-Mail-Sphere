@@ -227,38 +227,6 @@
     </div>
     </main>
 
-    <div v-if="showResetModal" class="modal-backdrop">
-    <form class="modal-card" @submit.prevent="sendResetEmail">
-      <h3>Reset your password</h3>
-      <p>Please enter your email to receive a reset link.</p>
-      <input
-        type="email"
-        v-model.trim="resetEmail"
-        placeholder="you@email.com"
-        autocomplete="email"
-      />
-      <div class="modal-actions">
-        <button type="button" class="outline-button" @click="closeResetModal">
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="signup-button"
-          :disabled="resetLoading"
-        >
-          {{ resetLoading ? 'Sending...' : 'Send email' }}
-        </button>
-      </div>
-      <div v-if="resetError" class="error-message modal-error">
-        {{ resetError }}
-      </div>
-      <div v-if="resetLoading" class="loading-message">Sending email...</div>
-      <div v-if="resetSent" class="success-message modal-success">
-        If that email exists, we sent a reset link.
-      </div>
-    </form>
-    </div>
-
   </div>
 </template>
 
