@@ -34,7 +34,7 @@ const userResetTokens = new Map()
 const verifyTokens = new Map()
 const userVerifyTokens = new Map()
 
-let store = { users: [], listings: [] }
+let store = { users: [] }
 
 const USER_TYPES = new Set(['standard', 'admin'])
 
@@ -60,7 +60,8 @@ const defaultStore = {
                 agentPhoto: 'https://t4.ftcdn.net/jpg/05/45/89/41/360_F_545894172_fLINXPGJs19SgFvA3P6vTvXN59iScZJ0.jpg',
                 companyLogo: ''
             },
-            orderHistory: []
+            orderHistory: [],
+            listings: []
         },
         {
             id: 'user-2',
@@ -77,39 +78,54 @@ const defaultStore = {
                 agentPhoto: '',
                 companyLogo: ''
             },
-            orderHistory: []
+            orderHistory: [],
+            listings: []
         }
-    ],
-    listings: []
+    ]
 }
 
-const normalizeUsers = (users = []) =>
-    users.map((user) => {
-        const { listings, ...rest } = user || {}
+const normalizeListingsForUser = (listings = [], userId) =>
+    listings
+        .filter((listing) => listing)
+        .map((listing) => ({ ...listing, userId }))
+
+const normalizeUsers = (users = [], legacyTopLevelListings = []) => {
+    const legacyListingsByUser = new Map()
+        ; (Array.isArray(legacyTopLevelListings) ? legacyTopLevelListings : [])
+            .filter((listing) => listing && listing.userId)
+            .forEach((listing) => {
+                const userId = listing.userId
+                if (!legacyListingsByUser.has(userId)) {
+                    legacyListingsByUser.set(userId, [])
+                }
+                legacyListingsByUser.get(userId).push({ ...listing, userId })
+            })
+
+    return users.map((user) => {
+        const rest = user || {}
+        const userId = rest.id
+        const ownListings = normalizeListingsForUser(rest?.listings || [], userId)
+        const migratedListings = legacyListingsByUser.get(userId) || []
         return {
             ...rest,
             userType: normalizeUserType(rest?.userType),
-            listings: []
+            orderHistory: Array.isArray(rest?.orderHistory) ? rest.orderHistory : [],
+            listings: ownListings.length > 0 ? ownListings : migratedListings
         }
     })
-
-const normalizeListings = (listings = [], users = []) => {
-    const validUserIds = new Set(users.map((user) => user.id))
-    return listings
-        .filter((listing) => listing && listing.userId && validUserIds.has(listing.userId))
-        .map((listing) => ({ ...listing }))
 }
 
-const getListingsForUser = (userId) =>
-    (store.listings || []).filter((listing) => listing.userId === userId)
+const getListingsForUser = (userId) => {
+    const user = (store.users || []).find((entry) => entry.id === userId)
+    if (!user) return []
+    return normalizeListingsForUser(user.listings || [], userId)
+}
 
 const setListingsForUser = (userId, incomingListings = []) => {
-    const otherUsersListings = (store.listings || []).filter((listing) => listing.userId !== userId)
-    const nextUserListings = incomingListings.map((listing) => ({
-        ...listing,
-        userId
-    }))
-    store.listings = [...otherUsersListings, ...nextUserListings]
+    const user = (store.users || []).find((entry) => entry.id === userId)
+    if (!user) return []
+    const nextUserListings = normalizeListingsForUser(incomingListings, userId)
+    user.listings = nextUserListings
     return nextUserListings
 }
 
@@ -130,21 +146,11 @@ const loadStore = async () => {
             return
         }
 
-        const users = normalizeUsers(parsed.users)
-        const legacyListings = parsed.users.flatMap((user) =>
-            (user?.listings || []).map((listing) => ({
-                ...listing,
-                userId: listing?.userId || user.id
-            }))
-        )
-
-        const sourceListings = Array.isArray(parsed.listings) ? parsed.listings : legacyListings
-        const listings = normalizeListings(sourceListings, users)
+        const users = normalizeUsers(parsed.users, parsed.listings)
 
         store = {
             ...parsed,
-            users,
-            listings
+            users
         }
     } catch (error) {
         store = defaultStore
@@ -152,7 +158,19 @@ const loadStore = async () => {
 }
 
 const saveStore = async () => {
-    await fs.writeFile(DATA_FILE, JSON.stringify(store, null, 2))
+    const users = (store.users || []).map((user) => ({
+        ...user,
+        listings: normalizeListingsForUser(user?.listings || [], user?.id)
+    }))
+
+    const persistableStore = {
+        ...store,
+        users
+    }
+
+    delete persistableStore.listings
+
+    await fs.writeFile(DATA_FILE, JSON.stringify(persistableStore, null, 2))
 }
 
 const findUserByLogin = (login) =>
@@ -304,7 +322,8 @@ app.post('/api/signup', async (req, res) => {
             agentPhoto: '',
             companyLogo: ''
         },
-        orderHistory: []
+        orderHistory: [],
+        listings: []
     }
 
     store.users.push(newUser)
@@ -662,12 +681,16 @@ app.put('/api/listings/:id', async (req, res) => {
     const { id } = req.params
     const updates = req.body || {}
 
-    const index = (store.listings || []).findIndex((l) => l.id === id && l.userId === user.id)
+    if (!Array.isArray(user.listings)) {
+        user.listings = []
+    }
+
+    const index = user.listings.findIndex((listing) => listing.id === id)
     if (index === -1) {
         return res.status(404).json({ success: false, message: 'Listing not found.' })
     }
 
-    store.listings[index] = { ...store.listings[index], ...updates, userId: user.id }
+    user.listings[index] = { ...user.listings[index], ...updates, userId: user.id }
 
     try {
         await saveStore()
@@ -675,7 +698,7 @@ app.put('/api/listings/:id', async (req, res) => {
         return res.status(500).json({ success: false, message: 'Unable to update listing.' })
     }
 
-    return res.json({ success: true, listing: store.listings[index] })
+    return res.json({ success: true, listing: user.listings[index] })
 })
 
 app.delete('/api/listings/:id', async (req, res) => {
@@ -686,12 +709,16 @@ app.delete('/api/listings/:id', async (req, res) => {
 
     const { id } = req.params
 
-    const index = (store.listings || []).findIndex((l) => l.id === id && l.userId === user.id)
+    if (!Array.isArray(user.listings)) {
+        user.listings = []
+    }
+
+    const index = user.listings.findIndex((listing) => listing.id === id)
     if (index === -1) {
         return res.status(404).json({ success: false, message: 'Listing not found.' })
     }
 
-    store.listings.splice(index, 1)
+    user.listings.splice(index, 1)
 
     try {
         await saveStore()
@@ -773,17 +800,11 @@ app.post('/api/order-history', async (req, res) => {
         user.orderHistory = []
     }
 
-    const existingStatusById = new Map(
-        user.orderHistory
-            .filter((order) => order && order.id)
-            .map((order) => [order.id, normalizeOrderStatus(order.status)])
-    )
-
     // Replace all orders with new ones, ensuring each has a userId.
-    // Status is preserved for existing records and normalized from payload for new records.
+    // Status is normalized from payload so saved state is preserved exactly as sent.
     user.orderHistory = incoming.map((order) => ({
         ...order,
-        status: existingStatusById.get(order?.id) || normalizeOrderStatus(order?.status),
+        status: normalizeOrderStatus(order?.status),
         userId: user.id
     }))
 
