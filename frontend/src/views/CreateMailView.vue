@@ -213,6 +213,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { profileService } from '../services/profileService'
+import { getCurrentUserId } from '../services/profileDefaults'
 
 const route = useRoute()
 const router = useRouter()
@@ -227,8 +228,23 @@ const hasSubmitAttempted = ref(false)
 const showBack = ref(false)
 const profile = ref(null)
 const listings = ref([])
-const LISTINGS_KEY = 'direct-mail-listings'
+const LISTINGS_KEY_PREFIX = 'direct-mail-listings'
 const PENDING_ORDER_KEY = 'direct-mail-pending-order'
+const API_BASE = 'http://localhost:3001'
+
+const getListingsStorageKey = () => {
+  const userId = getCurrentUserId()
+  return userId ? `${LISTINGS_KEY_PREFIX}-${userId}` : `${LISTINGS_KEY_PREFIX}-guest`
+}
+
+const getAuthHeaders = () => {
+  const userId = getCurrentUserId()
+  const headers = { 'Content-Type': 'application/json' }
+  if (userId) {
+    headers['x-user-id'] = userId
+  }
+  return headers
+}
 
 const defaultFields = [
   {
@@ -839,18 +855,42 @@ const loadProfile = async () => {
   }
 }
 
-const loadListings = () => {
+const loadListings = async () => {
   try {
-    const raw = localStorage.getItem(LISTINGS_KEY)
+    const response = await fetch(`${API_BASE}/api/listings`, {
+      headers: getAuthHeaders()
+    })
+    if (response.ok) {
+      const data = await response.json()
+      const apiListings = Array.isArray(data?.listings) ? data.listings : []
+      listings.value = apiListings
+      localStorage.setItem(getListingsStorageKey(), JSON.stringify(apiListings))
+      return
+    }
+  } catch {
+  }
+
+  try {
+    const raw = localStorage.getItem(getListingsStorageKey())
     listings.value = raw ? JSON.parse(raw) : []
   } catch (error) {
     listings.value = []
   }
+
+  if (listings.value.length === 0) {
+    try {
+      const legacyRaw = localStorage.getItem(LISTINGS_KEY_PREFIX)
+      const legacyListings = legacyRaw ? JSON.parse(legacyRaw) : []
+      listings.value = Array.isArray(legacyListings) ? legacyListings : []
+    } catch {
+      listings.value = []
+    }
+  }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadProfile()
-  loadListings()
+  await loadListings()
   restorePendingFormDraft()
 })
 

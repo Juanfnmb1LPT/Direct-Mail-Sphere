@@ -35,6 +35,8 @@
                 inputmode="numeric"
                 autocomplete="cc-number"
                 placeholder="4242 4242 4242 4242"
+                maxlength="23"
+                @input="handleCardNumberInput"
                 required
               />
             </div>
@@ -49,6 +51,8 @@
                 type="text"
                 autocomplete="cc-exp"
                 placeholder="MM/YY"
+                maxlength="5"
+                @input="handleExpirationInput"
                 required
               />
             </div>
@@ -61,6 +65,8 @@
                 inputmode="numeric"
                 autocomplete="cc-csc"
                 placeholder="3-4 digits"
+                maxlength="4"
+                @input="handleCvvInput"
                 required
               />
             </div>
@@ -104,6 +110,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { getCurrentUserId } from '../services/profileDefaults'
 
 const router = useRouter()
 const pendingOrder = ref(null)
@@ -120,8 +127,22 @@ const paymentForm = ref({
 })
 
 const PENDING_ORDER_KEY = 'direct-mail-pending-order'
-const ORDERS_KEY = 'direct-mail-orders'
+const ORDERS_KEY_PREFIX = 'direct-mail-orders'
 const API_BASE = 'http://localhost:3001'
+
+const getStorageKey = () => {
+  const userId = getCurrentUserId()
+  return userId ? `${ORDERS_KEY_PREFIX}-${userId}` : `${ORDERS_KEY_PREFIX}-guest`
+}
+
+const getAuthHeaders = () => {
+  const userId = getCurrentUserId()
+  const headers = { 'Content-Type': 'application/json' }
+  if (userId) {
+    headers['x-user-id'] = userId
+  }
+  return headers
+}
 
 const loadPendingOrder = () => {
   if (typeof window === 'undefined') return null
@@ -141,7 +162,7 @@ const clearPendingOrder = () => {
 const loadOrders = () => {
   if (typeof window === 'undefined') return []
   try {
-    const raw = window.localStorage.getItem(ORDERS_KEY)
+    const raw = window.localStorage.getItem(getStorageKey())
     const parsed = raw ? JSON.parse(raw) : []
     return Array.isArray(parsed) ? parsed : []
   } catch {
@@ -151,14 +172,32 @@ const loadOrders = () => {
 
 const saveOrders = (orders) => {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
+  window.localStorage.setItem(getStorageKey(), JSON.stringify(orders))
 }
 
-const sendCsvToEmail = async ({ recipientEmail, csvContent, templateName }) => {
+const syncOrderHistoryToApi = async (nextOrders) => {
+  const response = await fetch(`${API_BASE}/api/order-history`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ orderHistory: nextOrders })
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}))
+    throw new Error(errorBody?.message || 'Unable to save order history.')
+  }
+
+  const data = await response.json()
+  const savedOrders = Array.isArray(data?.orderHistory) ? data.orderHistory : nextOrders
+  saveOrders(savedOrders)
+  return savedOrders
+}
+
+const sendCsvToEmail = async ({ recipientEmail, csvContent, templateName, fileName }) => {
   const response = await fetch(`${API_BASE}/api/send-csv`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipientEmail, csvContent, templateName })
+    body: JSON.stringify({ recipientEmail, csvContent, templateName, fileName })
   })
 
   if (!response.ok) {
@@ -189,18 +228,63 @@ const buildCsv = () => {
   return rows.map((csvRow) => csvRow.map(csvEscape).join(',')).join('\n')
 }
 
-const downloadCsv = (csvContent) => {
+const sanitizeFileSegment = (value) =>
+  String(value || '')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const buildCsvFileName = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const datePart = `${year}-${month}-${day}`
+  const lastNamePart = sanitizeFileSegment(
+    paymentForm.value.lastName || pendingOrder.value?.prefillCardLastName || pendingOrder.value?.formSnapshot?.last_name || 'Unknown'
+  )
+  const templatePart = sanitizeFileSegment(pendingOrder.value?.templateName || 'Template')
+  return `${lastNamePart}-${templatePart} - ${datePart}.csv`
+}
+
+const downloadCsv = (csvContent, fileName) => {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = 'create-mail.csv'
+  link.download = fileName
   link.click()
   URL.revokeObjectURL(url)
 }
 
 const normalizeCardNumber = (value) => String(value || '').replace(/\D/g, '')
 const normalizeCvv = (value) => String(value || '').replace(/\D/g, '')
+
+const formatCardNumber = (value) => {
+  const digits = normalizeCardNumber(value).slice(0, 19)
+  const groups = digits.match(/.{1,4}/g)
+  return groups ? groups.join(' ') : ''
+}
+
+const formatExpiration = (value) => {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 4)
+  if (digits.length <= 2) return digits
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`
+}
+
+const formatCvv = (value) => normalizeCvv(value).slice(0, 4)
+
+const handleCardNumberInput = (event) => {
+  paymentForm.value.cardNumber = formatCardNumber(event?.target?.value)
+}
+
+const handleExpirationInput = (event) => {
+  paymentForm.value.expiration = formatExpiration(event?.target?.value)
+}
+
+const handleCvvInput = (event) => {
+  paymentForm.value.cvv = formatCvv(event?.target?.value)
+}
 
 const isValidExpirationDate = (value) => {
   const cleaned = String(value || '').trim()
@@ -241,7 +325,7 @@ const validatePaymentForm = () => {
   return ''
 }
 
-const addOrderHistoryRecord = () => {
+const addOrderHistoryRecord = async () => {
   const order = pendingOrder.value
   if (!order) return
 
@@ -249,8 +333,16 @@ const addOrderHistoryRecord = () => {
   const newOrder = {
     id: `ORD-${now.getTime()}`,
     name: order.templateName,
+    templateId: order.templateId,
+    templateName: order.templateName,
     status: 'placed',
     address: order.address,
+    recipientEmail: order.recipientEmail,
+    totalProperties: Number(order.totalProperties || 0),
+    propertiesToAdvertise: Number(order.propertiesToAdvertise || order.totalProperties || 0),
+    csvHeaders: Array.isArray(order.csvHeaders) ? order.csvHeaders : [],
+    csvRow: Array.isArray(order.csvRow) ? order.csvRow : [],
+    formSnapshot: order.formSnapshot && typeof order.formSnapshot === 'object' ? order.formSnapshot : {},
     createdAt: now.toISOString(),
     date: now.toLocaleDateString('en-US', {
       month: 'short',
@@ -259,9 +351,24 @@ const addOrderHistoryRecord = () => {
     })
   }
 
-  const orders = loadOrders()
-  orders.unshift(newOrder)
-  saveOrders(orders)
+  const localOrders = loadOrders()
+  const localNext = [newOrder, ...localOrders.filter((existing) => existing?.id !== newOrder.id)]
+  saveOrders(localNext)
+
+  try {
+    const existingResponse = await fetch(`${API_BASE}/api/order-history?ts=${Date.now()}`, {
+      headers: getAuthHeaders(),
+      cache: 'no-store'
+    })
+
+    const existingOrders = existingResponse.ok
+      ? await existingResponse.json().then((data) => (Array.isArray(data?.orderHistory) ? data.orderHistory : []))
+      : []
+
+    const mergedOrders = [newOrder, ...existingOrders.filter((existing) => existing?.id !== newOrder.id)]
+    await syncOrderHistoryToApi(mergedOrders)
+  } catch {
+  }
 }
 
 const goBackToForm = () => {
@@ -292,20 +399,23 @@ const submitOrder = async () => {
       throw new Error('Unable to build CSV for this order.')
     }
 
-    downloadCsv(csv)
+    const exportFileName = buildCsvFileName()
+
+    downloadCsv(csv, exportFileName)
 
     if (!disableResend.value) {
       await sendCsvToEmail({
         recipientEmail: pendingOrder.value.recipientEmail,
         csvContent: csv,
-        templateName: pendingOrder.value.templateName
+        templateName: pendingOrder.value.templateName,
+        fileName: exportFileName
       })
       successMessage.value = `Order submitted. CSV downloaded and sent to ${pendingOrder.value.recipientEmail}.`
     } else {
       successMessage.value = 'Order submitted. CSV downloaded. Resend is disabled.'
     }
 
-    addOrderHistoryRecord()
+    await addOrderHistoryRecord()
     clearPendingOrder()
   } catch (error) {
     paymentError.value = error?.message || 'Unable to submit order.'
