@@ -834,7 +834,47 @@ const toggleCardSide = (cardName, direction) => {
 
   .cards-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 18px;
+  }
+
+  .feature-card {
+    border-radius: 10px;
+  }
+
+  .card-image-container {
+    height: auto;
+    aspect-ratio: 3 / 2;
+  }
+
+  .card-title {
+    font-size: 20px;
+    margin: 18px 16px 12px;
+  }
+
+  .card-description {
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 0 16px 16px;
+  }
+
+  .card-badge {
+    margin: 0 auto 16px;
+  }
+
+  .nav-arrow {
+    opacity: 1;
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+    background: rgba(0, 0, 0, 0.62);
+  }
+
+  .nav-arrow.left-arrow {
+    left: 6px;
+  }
+
+  .nav-arrow.right-arrow {
+    right: 6px;
   }
 
   .about-title {
@@ -880,6 +920,20 @@ const toggleCardSide = (cardName, direction) => {
   .modal-content {
     padding: 24px;
     width: 95%;
+  }
+}
+
+@media (max-width: 420px) {
+  .expectations-section {
+    padding: 56px 14px;
+  }
+
+  .card-title {
+    font-size: 18px;
+  }
+
+  .card-description {
+    font-size: 13.5px;
   }
 }
 </style>

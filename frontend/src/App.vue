@@ -43,7 +43,7 @@
           </button>
 
           <div id="dashboard-mobile-menu" class="mobile-menu-panel" :class="{ open: isMobileMenuOpen }">
-            <nav class="sidebar-options" aria-label="Dashboard options">
+            <nav class="sidebar-options" aria-label="Dashboard options" @click="handleMenuSelection">
               <RouterLink class="sidebar-link" :class="{ active: route.name === 'dashboard' }" to="/dashboard">
                 <span class="sidebar-icon" aria-hidden="true">⌂</span>
                 <span class="sidebar-label">Dashboard</span>
@@ -85,7 +85,7 @@
               </RouterLink>
             </nav>
 
-            <div class="sidebar-footer">
+            <div class="sidebar-footer" @click="handleMenuSelection">
               <a v-if="!isAdmin" class="sidebar-link" href="#" @click.prevent="goToHome">
                 <span class="sidebar-icon" aria-hidden="true">🏁</span>
                 <span class="sidebar-label">Landing Page</span>
@@ -98,9 +98,17 @@
           </div>
         </aside>
 
+        <button
+          v-if="isMobileMenuOpen"
+          type="button"
+          class="mobile-menu-backdrop"
+          aria-label="Close menu"
+          @click="closeMobileMenu"
+        ></button>
+
         <main class="dashboard-main">
           <router-view v-slot="{ Component, route: currentRoute }">
-            <Transition name="page-fade" mode="out-in" appear>
+            <Transition :name="pageTransitionName" mode="out-in" appear>
               <component :is="Component" :key="currentRoute.fullPath" />
             </Transition>
           </router-view>
@@ -109,7 +117,7 @@
     </template>
 
     <router-view v-else v-slot="{ Component, route: currentRoute }">
-      <Transition name="page-fade" mode="out-in" appear>
+      <Transition :name="pageTransitionName" mode="out-in" appear>
         <component :is="Component" :key="currentRoute.fullPath" />
       </Transition>
     </router-view>
@@ -137,6 +145,7 @@ const isMobileMenuOpen = ref(false)
 const profileImage = ref(defaultProfileImage)
 const profileName = ref('User')
 const userType = ref('standard')
+const pageTransitionName = ref('page-fade')
 
 const dashboardRouteNames = new Set([
   'dashboard',
@@ -152,6 +161,27 @@ const dashboardRouteNames = new Set([
 
 const adminAllowedRouteNames = new Set(['dashboard', 'orders', 'users'])
 
+const transitionRouteOrder = [
+  'dashboard',
+  'create-mail',
+  'create-mail-form',
+  'create-mail-payment',
+  'map-test',
+  'orders',
+  'listings',
+  'profile',
+  'users'
+]
+
+const getTransitionIndex = (routeName) => transitionRouteOrder.indexOf(routeName)
+
+const isDesktopViewport = () => {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(min-width: 901px)').matches
+}
+
+const previousRouteName = ref(route.name)
+
 const showDashboardNav = computed(() => dashboardRouteNames.has(route.name))
 
 const isAdmin = computed(() => userType.value === 'admin')
@@ -166,6 +196,14 @@ const toggleSidebar = () => {
 
 const toggleMobileMenu = () => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+}
+
+const handleMenuSelection = () => {
+  closeMobileMenu()
 }
 
 const goToHome = () => {
@@ -209,6 +247,17 @@ const handleSidebarImageError = () => {
 watch(
   () => route.fullPath,
   () => {
+    const previousIndex = getTransitionIndex(previousRouteName.value)
+    const currentIndex = getTransitionIndex(route.name)
+
+    if (isDesktopViewport() && previousIndex !== -1 && currentIndex !== -1 && previousIndex !== currentIndex) {
+      pageTransitionName.value = currentIndex > previousIndex ? 'page-slide-up' : 'page-slide-down'
+    } else {
+      pageTransitionName.value = 'page-fade'
+    }
+
+    previousRouteName.value = route.name
+    closeMobileMenu()
     loadSidebarProfile()
     enforceRoleRouteAccess()
   },
@@ -246,9 +295,48 @@ onUnmounted(() => {
   transform: translateY(0);
 }
 
+.page-slide-up-enter-active,
+.page-slide-up-leave-active,
+.page-slide-down-enter-active,
+.page-slide-down-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.page-slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.page-slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-18px);
+}
+
+.page-slide-down-enter-from {
+  opacity: 0;
+  transform: translateY(-18px);
+}
+
+.page-slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.page-slide-up-enter-to,
+.page-slide-up-leave-from,
+.page-slide-down-enter-to,
+.page-slide-down-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .page-fade-enter-active,
-  .page-fade-leave-active {
+  .page-fade-leave-active,
+  .page-slide-up-enter-active,
+  .page-slide-up-leave-active,
+  .page-slide-down-enter-active,
+  .page-slide-down-leave-active {
     transition-duration: 0.01ms;
   }
 }
@@ -368,6 +456,10 @@ onUnmounted(() => {
   display: block;
 }
 
+.mobile-menu-backdrop {
+  display: none;
+}
+
 .sidebar-footer {
   margin-top: auto;
 }
@@ -454,6 +546,8 @@ onUnmounted(() => {
     width: 100%;
     padding: 10px 12px 12px;
     box-shadow: 0 8px 24px rgba(11, 22, 48, 0.22);
+    position: relative;
+    z-index: 30;
   }
 
   .sidebar-toggle {
@@ -508,6 +602,18 @@ onUnmounted(() => {
 
   .mobile-menu-panel.open {
     display: block;
+  }
+
+  .mobile-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    border: 0;
+    background: rgba(11, 22, 48, 0.4);
+    padding: 0;
+    margin: 0;
+    z-index: 20;
+    cursor: pointer;
   }
 }
 </style>

@@ -8,11 +8,15 @@
           <p class="section-subtitle">Use these cards to showcase your listing clearly and attract attention fast.</p>
         </div>
 
-        <div class="row-carousel">
-          <button type="button" class="carousel-arrow" @click="showPreviousFirst" aria-label="Previous market templates">
+        <div
+          class="row-carousel"
+          @touchstart.passive="onCarouselTouchStart($event, 'first')"
+          @touchend="onCarouselTouchEnd($event, 'first')"
+        >
+          <button type="button" class="carousel-arrow" @click="navigateFirst('prev')" aria-label="Previous market templates">
             &#10094;
           </button>
-          <div class="templates-row five-across">
+          <div :class="['templates-row', 'five-across', firstAnimationClass]">
             <button
               v-for="template in firstGroupTemplates"
               :key="template.id"
@@ -24,7 +28,7 @@
               <span class="template-title">{{ template.name }}</span>
             </button>
           </div>
-          <button type="button" class="carousel-arrow" @click="showNextFirst" aria-label="Next market templates">
+          <button type="button" class="carousel-arrow" @click="navigateFirst('next')" aria-label="Next market templates">
             &#10095;
           </button>
         </div>
@@ -36,11 +40,15 @@
           <p class="section-subtitle">A variety of different cards to market your way to customers in unique ways.</p>
         </div>
 
-        <div class="row-carousel">
-          <button type="button" class="carousel-arrow" @click="showPreviousSecond" aria-label="Previous creative templates">
+        <div
+          class="row-carousel"
+          @touchstart.passive="onCarouselTouchStart($event, 'second')"
+          @touchend="onCarouselTouchEnd($event, 'second')"
+        >
+          <button type="button" class="carousel-arrow" @click="navigateSecond('prev')" aria-label="Previous creative templates">
             &#10094;
           </button>
-          <div class="templates-row five-across">
+          <div :class="['templates-row', 'five-across', secondAnimationClass]">
             <button
               v-for="template in secondGroupTemplates"
               :key="template.id"
@@ -52,7 +60,7 @@
               <span class="template-title">{{ template.name }}</span>
             </button>
           </div>
-          <button type="button" class="carousel-arrow" @click="showNextSecond" aria-label="Next creative templates">
+          <button type="button" class="carousel-arrow" @click="navigateSecond('next')" aria-label="Next creative templates">
             &#10095;
           </button>
         </div>
@@ -79,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -87,7 +95,39 @@ const selectedTemplate = ref('')
 const isFocusOpen = ref(false)
 const firstStartIndex = ref(0)
 const secondStartIndex = ref(0)
-const visibleCount = 3
+const visibleCount = ref(3)
+const firstTouchStartX = ref(0)
+const secondTouchStartX = ref(0)
+const firstAnimationClass = ref('')
+const secondAnimationClass = ref('')
+let firstAnimationTimer = null
+let secondAnimationTimer = null
+const swipeThreshold = 40
+
+const updateVisibleCount = () => {
+  if (window.innerWidth <= 640) {
+    visibleCount.value = 1
+    return
+  }
+
+  if (window.innerWidth <= 980) {
+    visibleCount.value = 2
+    return
+  }
+
+  visibleCount.value = 3
+}
+
+onMounted(() => {
+  updateVisibleCount()
+  window.addEventListener('resize', updateVisibleCount)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateVisibleCount)
+  if (firstAnimationTimer) clearTimeout(firstAnimationTimer)
+  if (secondAnimationTimer) clearTimeout(secondAnimationTimer)
+})
 
 const templates = [
   { id: 'template-1', name: 'Template 1- Spring Clean', image: new URL('../assets/spring_clean.png', import.meta.url).href },
@@ -113,7 +153,7 @@ const secondTemplatePool = computed(() =>
 )
 
 const circularSlice = (pool, start) =>
-  Array.from({ length: visibleCount }, (_, index) => pool[(start + index) % pool.length])
+  Array.from({ length: visibleCount.value }, (_, index) => pool[(start + index) % pool.length])
 
 const firstGroupTemplates = computed(() => circularSlice(firstTemplatePool.value, firstStartIndex.value))
 const secondGroupTemplates = computed(() => circularSlice(secondTemplatePool.value, secondStartIndex.value))
@@ -148,9 +188,71 @@ const showNextSecond = () => {
   secondStartIndex.value = (secondStartIndex.value + 1) % secondTemplatePool.value.length
 }
 
+const triggerAnimation = (group, direction) => {
+  const animationName = direction === 'next' ? 'swipe-left' : 'swipe-right'
+
+  if (group === 'first') {
+    if (firstAnimationTimer) clearTimeout(firstAnimationTimer)
+    firstAnimationClass.value = animationName
+    firstAnimationTimer = setTimeout(() => {
+      firstAnimationClass.value = ''
+    }, 260)
+    return
+  }
+
+  if (secondAnimationTimer) clearTimeout(secondAnimationTimer)
+  secondAnimationClass.value = animationName
+  secondAnimationTimer = setTimeout(() => {
+    secondAnimationClass.value = ''
+  }, 260)
+}
+
+const navigateFirst = (direction) => {
+  triggerAnimation('first', direction)
+  if (direction === 'next') showNextFirst()
+  else showPreviousFirst()
+}
+
+const navigateSecond = (direction) => {
+  triggerAnimation('second', direction)
+  if (direction === 'next') showNextSecond()
+  else showPreviousSecond()
+}
+
 const goToForm = () => {
   if (!selectedTemplate.value) return
   router.push({ path: '/create-mail/form', query: { template: selectedTemplate.value } })
+}
+
+const onCarouselTouchStart = (event, group) => {
+  const touch = event.changedTouches?.[0]
+  if (!touch) return
+
+  if (group === 'first') {
+    firstTouchStartX.value = touch.clientX
+    return
+  }
+
+  secondTouchStartX.value = touch.clientX
+}
+
+const onCarouselTouchEnd = (event, group) => {
+  const touch = event.changedTouches?.[0]
+  if (!touch) return
+
+  const startX = group === 'first' ? firstTouchStartX.value : secondTouchStartX.value
+  const deltaX = touch.clientX - startX
+
+  if (Math.abs(deltaX) < swipeThreshold) return
+
+  if (group === 'first') {
+    if (deltaX < 0) navigateFirst('next')
+    else navigateFirst('prev')
+    return
+  }
+
+  if (deltaX < 0) navigateSecond('next')
+  else navigateSecond('prev')
 }
 </script>
 
@@ -198,7 +300,37 @@ const goToForm = () => {
 .templates-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 18px;
+}
+
+.templates-row.swipe-left {
+  animation: swipeLeft 0.24s ease;
+}
+
+.templates-row.swipe-right {
+  animation: swipeRight 0.24s ease;
+}
+
+@keyframes swipeLeft {
+  from {
+    opacity: 0.78;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes swipeRight {
+  from {
+    opacity: 0.78;
+    transform: translateX(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .row-carousel {
@@ -239,7 +371,7 @@ const goToForm = () => {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  min-height: 280px;
+  height: clamp(180px, 20vw, 240px);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -257,13 +389,15 @@ const goToForm = () => {
   border-color: #3d5aff;
   border-width: 2px;
   box-shadow: 0 14px 28px rgba(82, 129, 255, 0.32);
-  transform: scale(1.04);
+  transform: translateY(-2px);
 }
 
 .template-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
+  background: #0f1f3d;
   position: absolute;
   top: 0;
   left: 0;
@@ -381,23 +515,80 @@ const goToForm = () => {
 }
 
 @media (max-width: 980px) {
+  .templates-container {
+    padding: 24px 16px;
+  }
+
   .row-carousel {
-    grid-template-columns: 1fr;
+    grid-template-columns: 44px 1fr 44px;
+    gap: 10px;
   }
 
   .carousel-arrow {
-    width: 100%;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    padding: 0;
   }
 
   .templates-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .template-tile {
+    height: clamp(170px, 24vw, 220px);
+  }
+
+  .template-tile.selected {
+    transform: none;
+  }
+
+  .template-title {
+    padding: 10px 12px;
+    font-size: 0.92rem;
   }
 }
 
 @media (max-width: 640px) {
+  .templates-container {
+    padding: 18px 12px;
+  }
+
+  .templates-heading h2 {
+    font-size: 1.35rem;
+    margin-bottom: 10px;
+  }
+
+  .section-subtitle {
+    margin: 0 0 10px;
+    font-size: 0.86rem;
+  }
+
   .templates-row {
     grid-template-columns: 1fr;
+  }
+
+  .row-carousel {
+    grid-template-columns: 40px 1fr 40px;
+    gap: 8px;
+  }
+
+  .carousel-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .template-tile {
+    height: clamp(210px, 52vw, 280px);
+    aspect-ratio: 1.48 / 1;
+    border-radius: 12px;
+  }
+
+  .template-focus-card {
+    width: min(94vw, 670px);
+    padding: 10px;
   }
 }
 </style>
