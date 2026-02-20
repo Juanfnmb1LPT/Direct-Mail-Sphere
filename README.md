@@ -87,3 +87,7 @@ Frontend runs on http://localhost:5173
 ## Test credentials
 - Username: `test`
 - Password: `test123`
+
+### Admin test credentials
+- Email: `admintest`
+- Password: `admintest123`

@@ -64,9 +64,9 @@
             <td class="empty-row" :colspan="isAdmin ? 5 : 4">No orders yet.</td>
           </tr>
           <tr v-for="(order, rowIndex) in visibleOrders" :key="`${order.id}-${order.userId || 'unknown'}-${order.createdAt || ''}-${rowIndex}`">
-            <td>{{ formatDate(order) }}</td>
-            <td>#{{ order.id }}</td>
-            <td>
+            <td data-label="Order Date">{{ formatDate(order) }}</td>
+            <td data-label="Order Number">#{{ order.id }}</td>
+            <td data-label="Status">
               <div class="status-cell">
                 <template v-if="isAdmin">
                   <select
@@ -85,8 +85,8 @@
                 </span>
               </div>
             </td>
-            <td v-if="isAdmin">{{ order.userName || order.userId || 'Unknown user' }}</td>
-            <td class="address-cell">{{ order.address || '—' }}</td>
+            <td v-if="isAdmin" data-label="User">{{ order.userName || order.userId || 'Unknown user' }}</td>
+            <td class="address-cell" data-label="Address">{{ order.address || '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -749,13 +749,156 @@ watch(filteredOrders, (value) => {
 }
 
 @media (max-width: 768px) {
+  .order-history-container {
+    padding: 1rem 0.75rem 1.5rem;
+  }
+
   .order-history-header {
     flex-direction: column;
     align-items: flex-start;
+    padding: 1rem;
+    gap: 14px;
+    border-radius: 12px;
+  }
+
+  .order-history-header h1 {
+    font-size: 1.55rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+  }
+
+  .header-left {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .filter-chip {
+    justify-content: center;
+    width: 100%;
+    padding: 9px 10px;
+    font-size: 0.78rem;
+  }
+
+  .search-row {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .order-search {
+    width: 100%;
+  }
+
+  .seed-button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .table-shell {
+    padding: 0.75rem;
+    overflow: visible;
   }
 
   .orders-table {
-    min-width: 520px;
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+  }
+
+  .orders-table thead {
+    display: none;
+  }
+
+  .orders-table tbody,
+  .orders-table tr,
+  .orders-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .orders-table tbody tr {
+    background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%) !important;
+    border: 1.5px solid rgba(61, 90, 255, 0.45);
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(61, 90, 255, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+  }
+
+  .orders-table tbody tr:hover {
+    background: #ffffff !important;
+  }
+
+  .orders-table tbody td {
+    border-bottom: 1px solid rgba(61, 90, 255, 0.24);
+    padding: 10px 12px;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .orders-table tbody td:last-child {
+    border-bottom: 0;
+  }
+
+  .orders-table tbody td::before {
+    content: attr(data-label);
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #2e3c63;
+    flex-shrink: 0;
+  }
+
+  .status-cell {
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .status-select {
+    max-width: 170px;
+  }
+
+  .address-cell {
+    align-items: flex-start;
+    word-break: break-word;
+  }
+
+  .address-cell::before {
+    margin-top: 2px;
+  }
+
+  .empty-row {
+    text-align: center;
+    justify-content: center;
+    border-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .orders-table tbody td {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .status-cell {
+    justify-content: flex-start;
   }
 }
 </style>

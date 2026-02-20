@@ -56,7 +56,7 @@
         <div v-if="!isAdmin" class="dashboard-action-card dashboard-stat-card">
           <p class="stat-note">our records show</p>
           <h3 class="stat-title">Your total orders:</h3>
-          <p class="stat-value">0</p>
+          <p class="stat-value">{{ totalOrders }}</p>
         </div>
 
         <div v-if="!isAdmin" class="dashboard-action-card dashboard-stat-card">
@@ -74,15 +74,65 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { profileService } from '../services/profileService'
-import { getCurrentUserType } from '../services/profileDefaults'
+import { getCurrentUserId, getCurrentUserType } from '../services/profileDefaults'
 
 const route = useRoute()
 const router = useRouter()
 const firstName = ref('')
 const lastName = ref('')
 const isAdmin = ref(false)
+const totalOrders = ref(0)
 const showWelcomeAnimation = ref(false)
 let welcomeTimerId = null
+
+const ORDERS_KEY_PREFIX = 'direct-mail-orders'
+const API_BASE = 'http://localhost:3001'
+
+const getStorageKey = () => {
+  const userId = getCurrentUserId()
+  return userId ? `${ORDERS_KEY_PREFIX}-${userId}` : `${ORDERS_KEY_PREFIX}-guest`
+}
+
+const getAuthHeaders = () => {
+  const userId = getCurrentUserId()
+  const headers = { 'Content-Type': 'application/json' }
+  if (userId) {
+    headers['x-user-id'] = userId
+  }
+  return headers
+}
+
+const loadOrdersCount = async () => {
+  if (typeof window === 'undefined') {
+    totalOrders.value = 0
+    return
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/api/order-history?ts=${Date.now()}`, {
+      headers: getAuthHeaders(),
+      cache: 'no-store'
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      const orderHistory = Array.isArray(data?.orderHistory) ? data.orderHistory : []
+      window.localStorage.setItem(getStorageKey(), JSON.stringify(orderHistory))
+      totalOrders.value = orderHistory.length
+      return
+    }
+  } catch (error) {
+    // Fall back to localStorage below
+  }
+
+  try {
+    const raw = window.localStorage.getItem(getStorageKey())
+    const parsed = raw ? JSON.parse(raw) : []
+    totalOrders.value = Array.isArray(parsed) ? parsed.length : 0
+  } catch {
+    totalOrders.value = 0
+  }
+}
 
 const displayName = computed(() => {
   const first = String(firstName.value || '').trim()
@@ -106,6 +156,9 @@ const loadNameFromCachedProfile = () => {
 const loadProfile = async () => {
   isAdmin.value = getCurrentUserType() === 'admin'
   loadNameFromCachedProfile()
+  if (!isAdmin.value) {
+    await loadOrdersCount()
+  }
   const result = await profileService.getProfile()
   if (result?.success && result?.profile) {
     firstName.value = result.profile.firstName || ''
@@ -113,8 +166,22 @@ const loadProfile = async () => {
   }
 }
 
+const handleWindowFocus = () => {
+  if (!isAdmin.value) {
+    loadOrdersCount()
+  }
+}
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible' && !isAdmin.value) {
+    loadOrdersCount()
+  }
+}
+
 onMounted(() => {
   loadProfile()
+  window.addEventListener('focus', handleWindowFocus)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
   if (route.query?.welcome === '1') {
     showWelcomeAnimation.value = true
     const nextQuery = { ...route.query }
@@ -128,6 +195,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('focus', handleWindowFocus)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
   if (welcomeTimerId) {
     clearTimeout(welcomeTimerId)
     welcomeTimerId = null
